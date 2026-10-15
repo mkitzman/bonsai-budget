@@ -34,8 +34,8 @@ const sorted = computed(() => {
   arr.sort((a, b) => {
     let va, vb
     if (sortKey.value === 'monthlyCost') {
-      va = store.monthlyAmount(a)
-      vb = store.monthlyAmount(b)
+      va = store.averageMonthlyAmount(a)
+      vb = store.averageMonthlyAmount(b)
     } else if (sortKey.value === 'yearlyCost') {
       va = store.yearlyAmount(a)
       vb = store.yearlyAmount(b)
@@ -95,7 +95,7 @@ const categoryColors = {
 
 const totalMonthly = computed(() =>
   store.subscriptions.value
-    .reduce((sum, s) => sum + store.getSubscriptionCurrentAmount(s), 0)
+    .reduce((sum, s) => sum + store.averageMonthlyAmount(s), 0)
 )
 
 const totalYearly = computed(() =>
@@ -103,9 +103,10 @@ const totalYearly = computed(() =>
     .reduce((sum, s) => sum + store.yearlyAmount(s), 0)
 )
 
+// Matches the Cost column: this month's override for subs with monthly rates, base cost otherwise
 const totalCost = computed(() =>
   store.subscriptions.value
-    .reduce((sum, s) => sum + (Number(s.cost) || 0), 0)
+    .reduce((sum, s) => sum + (hasSeasonal(s) ? store.getSubscriptionCurrentAmount(s) : Number(s.cost) || 0), 0)
 )
 
 function addSubscription() {
@@ -210,7 +211,7 @@ const fmt = (n) => {
                   style="width: 90px"
                 />
               </td>
-              <td class="read-only money-col">${{ fmt(store.getSubscriptionCurrentAmount(sub)) }}</td>
+              <td class="read-only money-col">${{ fmt(store.averageMonthlyAmount(sub)) }}</td>
               <td class="read-only money-col">${{ fmt(store.yearlyAmount(sub)) }}</td>
               <td class="cell-edit">
                 <textarea

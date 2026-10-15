@@ -22,6 +22,19 @@ function finishEditIncome() {
   editingIncome.value = false
 }
 
+const editingPayPeriods = ref(false)
+const payPeriodDraft = ref([])
+
+function startEditPayPeriods() {
+  payPeriodDraft.value = [...store.payPeriodStarts.value]
+  editingPayPeriods.value = true
+}
+
+function savePayPeriods() {
+  store.setPayPeriodStarts(payPeriodDraft.value)
+  editingPayPeriods.value = false
+}
+
 const showBudgetHint = ref(false)
 const expandedCategory = ref(null)
 
@@ -145,6 +158,44 @@ const subsBreakdown = computed(() => {
         <div class="label">Remaining</div>
         <div class="value" :style="{ color: store.remaining.value >= 0 ? 'var(--green)' : 'var(--red)' }">
           ${{ fmt(store.remaining.value) }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Pay period breakdown -->
+    <div class="mb-24">
+      <div class="pay-period-header">
+        <span class="text-sm text-secondary">By pay period</span>
+        <button v-if="!editingPayPeriods" class="link-btn text-sm" @click="startEditPayPeriods">Edit</button>
+      </div>
+      <div v-if="editingPayPeriods" class="pay-period-editor card text-sm">
+        <span class="text-secondary">Periods start on day:</span>
+        <span v-for="(day, i) in payPeriodDraft" :key="i" class="pay-period-day">
+          <input type="number" min="1" max="31" v-model.number="payPeriodDraft[i]" :disabled="i === 0" :aria-label="`Pay period ${i + 1} start day`" />
+          <button v-if="i > 0" class="btn-icon" aria-label="Remove pay period" @click="payPeriodDraft.splice(i, 1)">&times;</button>
+        </span>
+        <button class="btn btn-secondary btn-sm" @click="payPeriodDraft.push(Math.min(31, payPeriodDraft[payPeriodDraft.length - 1] + 7))">+ Period</button>
+        <button class="btn btn-sm" @click="savePayPeriods">Save</button>
+        <button class="btn btn-secondary btn-sm" @click="editingPayPeriods = false">Cancel</button>
+      </div>
+      <div class="summary-cards">
+        <div class="period-stack">
+          <div v-for="p in store.payPeriods.value" :key="'b' + p.start" class="summary-card period-card">
+            <div class="label">{{ p.label }}</div>
+            <div class="period-value" style="color: var(--orange)">${{ fmt(p.bills) }}</div>
+          </div>
+        </div>
+        <div class="period-stack">
+          <div v-for="p in store.payPeriods.value" :key="'s' + p.start" class="summary-card period-card">
+            <div class="label">{{ p.label }}</div>
+            <div class="period-value" style="color: var(--accent)">${{ fmt(p.subscriptions) }}</div>
+          </div>
+        </div>
+        <div class="period-stack">
+          <div v-for="p in store.payPeriods.value" :key="'r' + p.start" class="summary-card period-card">
+            <div class="label">{{ p.label }} <span class="text-tertiary">· ${{ fmt(p.income) }} in</span></div>
+            <div class="period-value" :style="{ color: p.remaining >= 0 ? 'var(--green)' : 'var(--red)' }">${{ fmt(p.remaining) }}</div>
+          </div>
         </div>
       </div>
     </div>
@@ -354,6 +405,62 @@ const subsBreakdown = computed(() => {
 }
 
 .mt-4 { margin-top: 4px; }
+
+/* Pay period breakdown */
+.pay-period-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.link-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--accent);
+  font-family: var(--font);
+}
+
+.pay-period-editor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+}
+
+.pay-period-day {
+  display: inline-flex;
+  align-items: center;
+}
+
+.pay-period-day input {
+  width: 64px;
+}
+
+.period-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.period-card {
+  padding: 12px 16px;
+}
+
+.period-value {
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.text-tertiary {
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
 
 .expense-banner .summary-cards {
   grid-template-columns: repeat(2, 1fr);

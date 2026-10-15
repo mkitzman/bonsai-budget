@@ -10,6 +10,8 @@ const selectedMonth = ref(new Date().getMonth()) // 0-indexed, shared across all
 const selectedYear = ref(new Date().getFullYear())
 const categoryTargets = useFireSync('bt-category-targets', { Needs: 0.50, Wants: 0.30, Savings: 0.20 })
 const includeExpenses = useFireSync('bt-include-expenses', true)
+// Day of month each pay period starts on; each period runs until the day before the next one
+const payPeriodStarts = useFireSync('bt-pay-period-starts', [1, 16])
 
 const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December']
@@ -35,6 +37,48 @@ export function useStore() {
   })
 
   const categories = ['Needs', 'Wants', 'Savings']
+
+  function setPayPeriodStarts(starts) {
+    const clean = [...new Set(starts.map(d => Math.min(31, Math.max(1, Math.round(Number(d) || 1)))))]
+      .sort((a, b) => a - b)
+    if (clean[0] !== 1) clean.unshift(1)
+    payPeriodStarts.value = clean
+  }
+
+  // Bills and subscriptions for the selected month, split by pay period (based on due/renewal day)
+  const payPeriods = computed(() => {
+    const daysInMonth = new Date(selectedYear.value, selectedMonth.value + 1, 0).getDate()
+    const starts = (payPeriodStarts.value.length ? payPeriodStarts.value : [1]).filter(d => d <= daysInMonth)
+    const incomeShare = (Number(income.value) || 0) / starts.length
+    const shortMonth = monthNames[selectedMonth.value].slice(0, 3)
+
+    // Days past the end of the month (e.g. 31 in a 30-day month) land in the last period
+    const periodIndex = (day) => {
+      const d = Math.max(1, Number(day) || 1)
+      let idx = 0
+      starts.forEach((start, i) => { if (d >= start) idx = i })
+      return idx
+    }
+
+    const periods = starts.map((start, i) => {
+      const end = i < starts.length - 1 ? starts[i + 1] - 1 : daysInMonth
+      return {
+        start,
+        end,
+        label: start === end ? `${shortMonth} ${start}` : `${shortMonth} ${start}–${end}`,
+        income: incomeShare,
+        bills: 0,
+        subscriptions: 0,
+        remaining: 0
+      }
+    })
+
+    bills.value.forEach(b => { periods[periodIndex(b.dueDate)].bills += getBillCurrentAmount(b) })
+    subscriptions.value.forEach(s => { periods[periodIndex(s.renewalDate)].subscriptions += getSubscriptionCurrentAmount(s) })
+    periods.forEach(p => { p.remaining = p.income - p.bills - p.subscriptions })
+
+    return periods
+  })
 
   function setCategoryTargets(targets) {
     categoryTargets.value = { ...targets }
@@ -80,7 +124,17 @@ export function useStore() {
     return cost
   }
 
+  // Average monthly cost; with monthly overrides this is the year's total spread over 12 months
+  function averageMonthlyAmount(sub) {
+    return yearlyAmount(sub) / 12
+  }
+
   function yearlyAmount(sub) {
+    if (sub.seasonalRates && Object.keys(sub.seasonalRates).length > 0) {
+      let total = 0
+      for (let m = 0; m < 12; m++) total += getSubscriptionAmountForMonth(sub, m)
+      return total
+    }
     const cost = Number(sub.cost) || 0
     if (sub.frequency === 'Yearly') return cost
     if (sub.frequency === 'Quarterly') return cost * 4
@@ -247,6 +301,7 @@ export function useStore() {
     totalSubscriptions,
     remaining,
     monthlyAmount,
+    averageMonthlyAmount,
     yearlyAmount,
     addBill,
     updateBill,
@@ -264,6 +319,9 @@ export function useStore() {
     categoryTargets,
     setCategoryTargets,
     includeExpenses,
+    payPeriodStarts,
+    setPayPeriodStarts,
+    payPeriods,
     categoryBreakdown,
     expenses,
     addExpense,
