@@ -27,6 +27,54 @@ function handleEscape(e) {
   if (e.key === 'Escape' && userMenuOpen.value) closeUserMenu()
 }
 
+// Month menu — anchored below the month button in the page header
+const monthMenuOpen = ref(false)
+const monthMenuRef = ref(null)
+const monthButtonRef = ref(null)
+const monthItemEls = []
+function openMonthMenu(focusIndex = store.selectedMonth.value) {
+  monthMenuOpen.value = true
+  nextTick(() => monthItemEls[focusIndex]?.focus())
+}
+function closeMonthMenu({ restoreFocus = false } = {}) {
+  monthMenuOpen.value = false
+  if (restoreFocus) monthButtonRef.value?.focus()
+}
+function toggleMonthMenu() {
+  if (monthMenuOpen.value) closeMonthMenu()
+  else openMonthMenu()
+}
+function selectMonth(i) {
+  store.selectedMonth.value = i
+  closeMonthMenu({ restoreFocus: true })
+}
+function handleMonthButtonKeydown(e) {
+  if (['Enter', ' ', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
+    e.preventDefault()
+    openMonthMenu()
+  }
+}
+function handleMonthMenuKeydown(e) {
+  const current = monthItemEls.indexOf(document.activeElement)
+  const last = monthItemEls.length - 1
+  const moves = { ArrowDown: current + 1, ArrowUp: current - 1, Home: 0, End: last }
+  if (e.key in moves) {
+    e.preventDefault()
+    monthItemEls[Math.min(last, Math.max(0, moves[e.key]))]?.focus()
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    e.stopPropagation()
+    closeMonthMenu({ restoreFocus: true })
+  } else if (e.key === 'Tab') {
+    closeMonthMenu()
+  }
+}
+function handleMonthClickOutside(e) {
+  if (monthMenuOpen.value && monthMenuRef.value && !monthMenuRef.value.contains(e.target)) {
+    closeMonthMenu()
+  }
+}
+
 // Segmented-control selection indicator — measured so it can slide between tabs
 const tabButtonsRef = ref(null)
 const tabEls = []
@@ -42,6 +90,7 @@ watch(activeTab, () => nextTick(updateIndicator))
 let resizeObserver
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  document.addEventListener('click', handleMonthClickOutside)
   document.addEventListener('keydown', handleEscape)
   nextTick(updateIndicator)
   document.fonts?.ready.then(updateIndicator)
@@ -50,6 +99,7 @@ onMounted(() => {
 })
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
+  document.removeEventListener('click', handleMonthClickOutside)
   document.removeEventListener('keydown', handleEscape)
   resizeObserver?.disconnect()
 })
@@ -102,6 +152,9 @@ const tabComponent = computed(() => {
   return map[activeTab.value]
 })
 
+// Every page except About is scoped to the selected month
+const isMonthScoped = computed(() => activeTab.value !== 'About')
+
 function handleTabKeydown(event, index) {
   let newIndex
   if (event.key === 'ArrowLeft') {
@@ -118,23 +171,48 @@ function handleTabKeydown(event, index) {
 </script>
 
 <template>
-    <header class="app-header">
-      <div>
-        <div class="app-title-row">
-          <h1 class="app-title">BonsaiBudget</h1>
-          <div class="app-icon-tile">
-            <BonsaiIcon class="app-icon" />
-          </div>
+    <header class="toolbar">
+      <button class="brand" @click="activeTab = 'Overview'" aria-label="BonsaiBudget — go to Overview">
+        <span class="brand-mark"><BonsaiIcon class="brand-icon" /></span>
+        <span class="brand-name">BonsaiBudget</span>
+      </button>
+
+      <nav class="toolbar-nav" aria-label="Pages">
+        <div class="tab-buttons" role="tablist" ref="tabButtonsRef">
+          <span
+            class="tab-indicator"
+            :class="{ ready: indicator.ready }"
+            :style="{ width: `${indicator.w}px`, transform: `translateX(${indicator.x}px)` }"
+            aria-hidden="true"
+          />
+          <button
+            v-for="(tab, index) in tabs"
+            :key="tab"
+            :ref="el => (tabEls[index] = el)"
+            :id="`tab-${tab}`"
+            role="tab"
+            :aria-selected="activeTab === tab"
+            :tabindex="activeTab === tab ? 0 : -1"
+            :class="['tab-btn', { active: activeTab === tab }]"
+            @click="activeTab = tab"
+            @keydown="handleTabKeydown($event, index)"
+          >
+            {{ tab }}
+          </button>
         </div>
-        <p class="text-secondary text-sm">
-          Cultivating Your Financial Future
-          <span v-if="store.syncStatus.uid.value" class="sync-badge" :class="{ syncing: store.syncStatus.isSyncing.value }" title="Synced to cloud">&#9679;</span>
-        </p>
-      </div>
-      <div class="header-right">
+      </nav>
+
+      <div class="toolbar-right">
         <div v-if="store.syncStatus.user.value" class="user-menu" ref="userMenuRef">
           <button class="avatar-btn" @click="toggleUserMenu" :aria-expanded="userMenuOpen" aria-haspopup="true" aria-label="Account menu">
             <img v-if="store.syncStatus.user.value.photoURL" :src="store.syncStatus.user.value.photoURL" class="avatar" referrerpolicy="no-referrer" alt="" />
+            <span v-else class="avatar avatar-fallback">{{ (store.syncStatus.user.value.displayName || store.syncStatus.user.value.email || '?')[0].toUpperCase() }}</span>
+            <span
+              v-if="store.syncStatus.uid.value"
+              class="sync-badge"
+              :class="{ syncing: store.syncStatus.isSyncing.value }"
+              :title="store.syncStatus.isSyncing.value ? 'Syncing…' : 'Synced to cloud'"
+            />
           </button>
           <Transition name="popover">
           <div v-if="userMenuOpen" class="user-dropdown" role="menu">
@@ -186,93 +264,268 @@ function handleTabKeydown(event, index) {
           </div>
           </Transition>
         </div>
-        <a v-else class="sign-in-link text-sm" @click="signInWithGoogle">Sign in</a>
+        <button v-else class="sign-in-link" @click="signInWithGoogle">Sign in</button>
       </div>
     </header>
 
-    <nav class="tab-bar">
-      <div class="tab-buttons" role="tablist" ref="tabButtonsRef">
-        <span
-          class="tab-indicator"
-          :class="{ ready: indicator.ready }"
-          :style="{ width: `${indicator.w}px`, transform: `translateX(${indicator.x}px)` }"
-          aria-hidden="true"
-        />
-        <button
-          v-for="(tab, index) in tabs"
-          :key="tab"
-          :ref="el => (tabEls[index] = el)"
-          :id="`tab-${tab}`"
-          role="tab"
-          :aria-selected="activeTab === tab"
-          :tabindex="activeTab === tab ? 0 : -1"
-          :class="['tab-btn', { active: activeTab === tab }]"
-          @click="activeTab = tab"
-          @keydown="handleTabKeydown($event, index)"
-        >
-          {{ tab }}
-        </button>
+    <div class="app-body">
+    <div class="page-header">
+      <div class="page-title-group">
+        <h1 class="page-title">{{ activeTab }}</h1>
+        <div v-if="isMonthScoped" class="month-menu" ref="monthMenuRef">
+          <button
+            ref="monthButtonRef"
+            class="month-button"
+            aria-haspopup="menu"
+            :aria-expanded="monthMenuOpen"
+            aria-controls="month-menu-list"
+            @click="toggleMonthMenu"
+            @keydown="handleMonthButtonKeydown"
+          >
+            {{ store.monthNames[store.selectedMonth.value] }}<span class="month-chevron" aria-hidden="true" />
+          </button>
+          <Transition name="popover">
+            <div
+              v-if="monthMenuOpen"
+              id="month-menu-list"
+              class="month-list"
+              role="menu"
+              aria-label="Month"
+              @keydown="handleMonthMenuKeydown"
+            >
+              <button
+                v-for="(name, i) in store.monthNames"
+                :key="i"
+                :ref="el => (monthItemEls[i] = el)"
+                class="month-item"
+                :class="{ selected: store.selectedMonth.value === i }"
+                role="menuitemradio"
+                :aria-checked="store.selectedMonth.value === i"
+                tabindex="-1"
+                @click="selectMonth(i)"
+              >{{ name }}</button>
+            </div>
+          </Transition>
+        </div>
       </div>
-      <select
-        class="month-select"
-        :value="store.selectedMonth.value"
-        @change="store.selectedMonth.value = Number($event.target.value)"
-      >
-        <option v-for="(name, i) in store.monthNames" :key="i" :value="i">{{ name }}</option>
-      </select>
-    </nav>
+      <!-- Pages teleport their primary action (e.g. "+ Add Bill") here -->
+      <div id="page-actions" class="page-actions" />
+    </div>
 
     <main class="tab-content" role="tabpanel" :aria-labelledby="`tab-${activeTab}`">
       <transition name="tab-fade">
         <component :is="tabComponent" :key="activeTab" />
       </transition>
     </main>
+    </div>
 </template>
 
 <style scoped>
-/* Header */
-.app-title {
-  font-family: 'Manrope', system-ui;
-  font-weight: 800;
-  letter-spacing: -0.025em;
+/* Toolbar — 52px frosted bar: brand · segmented nav · avatar */
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: grid;
+  /* Equal side columns keep the nav truly centered */
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  height: 52px;
+  padding: 0 20px;
+  background: var(--toolbar-bg);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--hairline);
 }
 
-.app-title-row {
+.brand {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 9px;
+  justify-self: start;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font);
+  border-radius: 6px;
 }
 
-.app-icon-tile {
-  position: relative;
-  width: 1em;
-  height: 1em;
-  font-size: var(--app-title-size, 2rem);
+.brand-mark {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
   background: var(--green);
-  border-radius: 0.18em;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
-.app-icon {
+.brand-icon {
   width: 78%;
   height: 78%;
-  color: #ffffff;
+  color: #fff;
 }
 
-.app-header {
+.brand-name {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.toolbar-nav {
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.toolbar-right {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* Page header — large title with inline month menu, page action on the right */
+.page-header {
+  display: flex;
+  align-items: flex-end;
   justify-content: space-between;
-  margin-bottom: 24px;
+  gap: 16px;
+  padding: 36px 0 28px;
 }
 
-.header-right {
+.page-title-group {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  min-width: 0;
+}
+
+.page-title {
+  font-family: var(--font);
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.6px;
+  color: var(--text-primary);
+}
+
+.month-menu {
+  position: relative;
+}
+
+.month-button {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--font);
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--accent);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.15s ease;
+}
+
+.month-button:hover {
+  color: var(--accent-light);
+}
+
+.month-chevron {
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: translateY(-3px) rotate(45deg);
+}
+
+.month-list {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: -8px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  max-height: min(420px, 70vh);
+  overflow-y: auto;
+  padding: 6px;
+  background: var(--material-thick);
+  -webkit-backdrop-filter: var(--material-blur);
+  backdrop-filter: var(--material-blur);
+  border-radius: 12px;
+  box-shadow: 0 0 0 0.5px var(--material-edge) inset, 0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 12px 40px rgba(0, 0, 0, 0.18);
+  /* Grows out of the month button that opened it */
+  transform-origin: top left;
+}
+
+.month-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 6px 26px;
+  border: none;
+  border-radius: 7px;
+  background: none;
+  font-family: var(--font);
+  font-size: 14px;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  position: relative;
+}
+
+.month-item.selected::before {
+  content: '✓';
+  position: absolute;
+  left: 9px;
+  font-weight: 600;
+}
+
+.month-item:hover,
+.month-item:focus-visible {
+  background: var(--accent);
+  color: #fff;
+  outline: none;
+}
+
+.page-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.page-actions:empty {
+  display: none;
+}
+
+/* Header-level primary action: 36px, radius 10, 15/600 */
+.page-actions :deep(.btn) {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* Keyboard focus ring for toolbar + page header controls */
+.brand:focus-visible,
+.tab-btn:focus-visible,
+.month-button:focus-visible,
+.avatar-btn:focus-visible,
+.sign-in-link:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.5);
 }
 
 .user-menu {
@@ -286,6 +539,7 @@ function handleTabKeydown(event, index) {
   cursor: pointer;
   border-radius: 50%;
   line-height: 0;
+  position: relative;
   transition: box-shadow 0.2s, transform var(--spring-duration) var(--spring);
 }
 
@@ -294,17 +548,23 @@ function handleTabKeydown(event, index) {
   transition-duration: var(--press-duration);
 }
 
-.avatar-btn:hover,
-.avatar-btn:focus-visible {
-  box-shadow: 0 0 0 2px var(--green);
-  outline: none;
-}
-
 .avatar {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   display: block;
+  box-shadow: 0 0 0 1px var(--avatar-ring);
+}
+
+.avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--green);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
 }
 
 .avatar-lg {
@@ -466,9 +726,15 @@ function handleTabKeydown(event, index) {
 }
 
 .sign-in-link {
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--font);
+  font-size: 14px;
   color: var(--accent);
   cursor: pointer;
   font-weight: 500;
+  border-radius: 4px;
 }
 
 .sign-in-link:hover {
@@ -557,58 +823,27 @@ function handleTabKeydown(event, index) {
 .star-2 { width: 3px; height: 3px; top: 16px; left: 16px; }
 .star-3 { width: 2px; height: 2px; top: 10px; left: 22px; }
 
-/* Sync indicator */
+/* Sync indicator — small status dot on the avatar */
 .sync-badge {
-  font-size: 8px;
-  color: var(--green);
-  margin-left: 6px;
-  vertical-align: middle;
-  transition: color 0.3s;
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 2px var(--bg);
+  transition: background-color 0.3s;
 }
 
 .sync-badge.syncing {
-  color: var(--orange);
+  background: var(--orange);
   animation: pulse 1s ease infinite;
 }
 
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
-}
-
-.tab-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  margin: 0 -20px 28px;
-  padding: 10px 20px;
-  background: var(--material);
-  -webkit-backdrop-filter: var(--material-blur);
-  backdrop-filter: var(--material-blur);
-}
-
-/* Scroll edge: a hairline appears only once content scrolls under the bar */
-@supports (animation-timeline: scroll()) {
-  .tab-bar {
-    animation: tab-bar-edge linear both;
-    animation-timeline: scroll(root);
-    animation-range: 0 120px;
-  }
-  @keyframes tab-bar-edge {
-    from, 60% { box-shadow: 0 0.5px 0 transparent; }
-    to { box-shadow: 0 0.5px 0 var(--border); }
-  }
-}
-
-@media (max-width: 600px) {
-  .tab-bar {
-    margin: 0 -12px 20px;
-    padding: 8px 12px;
-  }
 }
 
 /* Segmented control */
@@ -618,7 +853,7 @@ function handleTabKeydown(event, index) {
   min-width: 0;
   padding: 2px;
   gap: 2px;
-  background: var(--fill);
+  background: var(--segment-track);
   border-radius: 9px;
   overflow-x: auto;
   scrollbar-width: none;
@@ -635,8 +870,8 @@ function handleTabKeydown(event, index) {
   bottom: 2px;
   left: 0;
   border-radius: 7px;
-  background: var(--surface);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 3px 1px rgba(0, 0, 0, 0.04);
+  background: var(--segment-thumb);
+  box-shadow: var(--segment-thumb-shadow);
   pointer-events: none;
 }
 
@@ -645,23 +880,18 @@ function handleTabKeydown(event, index) {
   transition: transform var(--spring-duration) var(--spring), width var(--spring-duration) var(--spring);
 }
 
-[data-theme="dark"] .tab-indicator {
-  background: #636366;
-}
-
 .tab-btn {
   position: relative;
   z-index: 1;
   flex-shrink: 0;
-  padding: 6px 16px;
+  padding: 5px 14px;
   border: none;
   border-radius: 7px;
   background: none;
   font-family: var(--font);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: -0.01em;
-  color: var(--text-secondary);
+  color: var(--segment-label);
   cursor: pointer;
   touch-action: manipulation;
   transition: color 0.2s ease, opacity 0.15s ease;
@@ -669,7 +899,7 @@ function handleTabKeydown(event, index) {
 
 @media (hover: hover) {
   .tab-btn:not(.active):hover {
-    color: var(--text-primary);
+    color: var(--segment-label-active);
   }
 }
 
@@ -679,41 +909,36 @@ function handleTabKeydown(event, index) {
 }
 
 .tab-btn.active {
-  color: var(--text-primary);
+  color: var(--segment-label-active);
   font-weight: 600;
 }
 
-.tab-btn:focus-visible {
-  outline-offset: -2px;
+/* Responsive */
+@media (max-width: 900px) {
+  .tab-btn {
+    font-size: 12px;
+    padding: 5px 10px;
+  }
 }
 
-.month-select {
-  flex-shrink: 0;
-  font-family: var(--font);
-  font-size: 14px;
-  font-weight: 600;
-  padding: 6px 28px 6px 12px;
-  border: none;
-  border-radius: 9px;
-  background-color: var(--fill);
-  color: var(--green);
-  cursor: pointer;
-  appearance: none;
-  width: auto;
-  max-width: 150px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5l3 3 3-3' fill='none' stroke='%238e8e93' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 9px center;
-  transition: background-color 0.15s ease;
+@media (max-width: 720px) {
+  .toolbar {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .brand-name {
+    display: none;
+  }
 }
 
-.month-select:hover {
-  background-color: var(--fill-strong);
-}
-
-.month-select:focus {
-  outline: none;
-  box-shadow: 0 0 0 4px var(--focus-ring);
+@media (max-width: 600px) {
+  .toolbar {
+    padding: 0 12px;
+  }
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 24px 0 20px;
+  }
 }
 
 /* New tab fades in immediately — no waiting for the old one to leave */

@@ -1,6 +1,5 @@
 <template>
   <section class="about">
-    <h2>About Bonsai Budget</h2>
     <p>
       Bonsai Budget is a minimalist financial tool designed for intentionality. In a world of bloated,
       automated tracking apps, we believe in the power of small-scale cultivation and the "zen" of

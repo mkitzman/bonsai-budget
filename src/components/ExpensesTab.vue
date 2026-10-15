@@ -66,11 +66,11 @@ function toggleMonth(key) {
 
 <template>
   <div>
-    <!-- Current month section -->
-    <div class="flex items-center justify-between mb-16">
-      <h2>Expenses — {{ currentMonthLabel }}</h2>
+    <Teleport defer to="#page-actions">
       <button class="btn" @click="addExpense">+ Add Expense</button>
-    </div>
+    </Teleport>
+
+    <!-- Current month section -->
 
     <div v-if="store.monthExpenses.value.length === 0" class="empty-state">
       <div class="icon">&#128660;</div>

@@ -109,10 +109,10 @@ const fmt = (n) => {
 
 <template>
   <div>
-    <div class="flex items-center justify-between mb-16">
-      <h2>Bills</h2>
+    <Teleport defer to="#page-actions">
       <button class="btn" @click="addBill">+ Add Bill</button>
-    </div>
+    </Teleport>
+
 
     <div v-if="store.bills.value.length === 0" class="empty-state">
       <div class="icon">&#128195;</div>
