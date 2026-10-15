@@ -10,7 +10,8 @@ import { useStore } from './composables/useStore.js'
 import { signInWithGoogle, signOut } from './composables/useFireSync.js'
 
 const store = useStore()
-const tabs = ['Overview', 'Bills', 'Subscriptions', 'Expenses', 'About']
+// About lives in the account menu (or beside Sign in) so the segmented nav fits on phones
+const tabs = ['Overview', 'Bills', 'Subscriptions', 'Expenses']
 const activeTab = ref('Overview')
 
 const userMenuOpen = ref(false)
@@ -18,6 +19,7 @@ const userMenuRef = ref(null)
 function toggleUserMenu() { userMenuOpen.value = !userMenuOpen.value }
 function closeUserMenu() { userMenuOpen.value = false }
 function handleSignOut() { closeUserMenu(); signOut() }
+function openAbout() { activeTab.value = 'About'; closeUserMenu() }
 function handleClickOutside(e) {
   if (userMenuOpen.value && userMenuRef.value && !userMenuRef.value.contains(e.target)) {
     closeUserMenu()
@@ -81,8 +83,12 @@ const tabEls = []
 const indicator = ref({ x: 0, w: 0, ready: false })
 function updateIndicator() {
   const el = tabEls[tabs.indexOf(activeTab.value)]
-  if (!el) return
-  indicator.value = { x: el.offsetLeft, w: el.offsetWidth, ready: indicator.value.ready }
+  // No segment is selected on About, so the thumb fades out in place
+  if (!el) {
+    indicator.value = { ...indicator.value, hidden: true }
+    return
+  }
+  indicator.value = { x: el.offsetLeft, w: el.offsetWidth, ready: indicator.value.ready, hidden: false }
   // Enable the spring only after the first placement so it doesn't slide in from 0
   if (!indicator.value.ready) requestAnimationFrame(() => { indicator.value.ready = true })
 }
@@ -171,7 +177,7 @@ function handleTabKeydown(event, index) {
 </script>
 
 <template>
-    <header class="toolbar">
+    <header class="toolbar" :class="{ 'signed-out': !store.syncStatus.user.value }">
       <button class="brand" @click="activeTab = 'Overview'" aria-label="BonsaiBudget — go to Overview">
         <span class="brand-mark"><BonsaiIcon class="brand-icon" /></span>
         <span class="brand-name">Bonsai<span class="brand-name-light">Budget</span></span>
@@ -181,7 +187,7 @@ function handleTabKeydown(event, index) {
         <div class="tab-buttons" role="tablist" ref="tabButtonsRef">
           <span
             class="tab-indicator"
-            :class="{ ready: indicator.ready }"
+            :class="{ ready: indicator.ready, hidden: indicator.hidden }"
             :style="{ width: `${indicator.w}px`, transform: `translateX(${indicator.x}px)` }"
             aria-hidden="true"
           />
@@ -260,6 +266,8 @@ function handleTabKeydown(event, index) {
               </button>
             </div>
             <div class="user-dropdown-divider" />
+            <button class="user-dropdown-item" :class="{ current: activeTab === 'About' }" role="menuitem" @click="openAbout">About</button>
+            <div class="user-dropdown-divider" />
             <button class="user-dropdown-item sign-out" role="menuitem" @click="handleSignOut">Sign out</button>
           </div>
           </Transition>
@@ -312,11 +320,16 @@ function handleTabKeydown(event, index) {
       <div id="page-actions" class="page-actions" />
     </div>
 
-    <main class="tab-content" role="tabpanel" :aria-labelledby="`tab-${activeTab}`">
+    <main class="tab-content" :role="tabs.includes(activeTab) ? 'tabpanel' : undefined" :aria-labelledby="tabs.includes(activeTab) ? `tab-${activeTab}` : undefined">
       <transition name="tab-fade">
         <component :is="tabComponent" :key="activeTab" />
       </transition>
     </main>
+
+    <!-- Signed-out visitors have no account menu, so About is reachable from the footer -->
+    <footer v-if="!store.syncStatus.user.value" class="app-footer">
+      <button class="about-link" :class="{ current: activeTab === 'About' }" @click="activeTab = 'About'">About BonsaiBudget</button>
+    </footer>
     </div>
 </template>
 
@@ -734,6 +747,38 @@ function handleTabKeydown(event, index) {
   color: var(--text-primary);
 }
 
+.app-footer {
+  display: flex;
+  justify-content: center;
+  padding-top: 32px;
+}
+
+.about-link {
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.about-link:hover,
+.about-link.current {
+  color: var(--text-primary);
+}
+
+.about-link:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.5);
+}
+
+.user-dropdown-item.current {
+  font-weight: 600;
+}
+
 .sign-in-link {
   padding: 0;
   border: none;
@@ -885,8 +930,12 @@ function handleTabKeydown(event, index) {
 }
 
 /* Slides from wherever it currently is — CSS transitions retarget mid-flight */
+.tab-indicator.hidden {
+  opacity: 0;
+}
+
 .tab-indicator.ready {
-  transition: transform var(--spring-duration) var(--spring), width var(--spring-duration) var(--spring);
+  transition: transform var(--spring-duration) var(--spring), width var(--spring-duration) var(--spring), opacity 0.2s ease;
 }
 
 .tab-btn {
@@ -942,6 +991,29 @@ function handleTabKeydown(event, index) {
 @media (max-width: 600px) {
   .toolbar {
     padding: 0 12px;
+    gap: 8px;
+  }
+  .toolbar-right {
+    gap: 10px;
+  }
+  .tab-btn {
+    padding: 5px 6px;
+  }
+  .toolbar.signed-out {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .toolbar.signed-out .brand {
+    display: none;
+  }
+}
+
+/* Small phones (iPhone mini/SE): the Overview tab already goes home, so the logo can step aside */
+@media (max-width: 380px) {
+  .toolbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .brand {
+    display: none;
   }
   .page-header {
     flex-direction: column;
