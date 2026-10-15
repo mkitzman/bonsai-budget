@@ -1,6 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <rect width="100" height="100" rx="18" fill="#2A684A"/>
-  <g transform="translate(20,20) scale(0.206)" fill="#ffffff">
+  <defs>
+    <linearGradient id="emerald" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#34c759"/>
+      <stop offset="1" stop-color="#1a7f45"/>
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" rx="27" fill="url(#emerald)"/>
+  <g transform="translate(24,24.3) scale(0.1786)" fill="#ffffff">
     <g transform="translate(-177.48,498.76) scale(0.1,-0.1)">
       <path d="M3035 4974 c-68 -26 -72 -26 -103 -10 -17 9 -52 16 -77 16 -124 0
 -191 -97 -161 -231 8 -35 7 -36 -23 -31 -47 7 -132 -39 -213 -115 -114 -106

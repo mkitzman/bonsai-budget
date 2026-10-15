@@ -174,7 +174,7 @@ function handleTabKeydown(event, index) {
     <header class="toolbar">
       <button class="brand" @click="activeTab = 'Overview'" aria-label="BonsaiBudget — go to Overview">
         <span class="brand-mark"><BonsaiIcon class="brand-icon" /></span>
-        <span class="brand-name">BonsaiBudget</span>
+        <span class="brand-name">Bonsai<span class="brand-name-light">Budget</span></span>
       </button>
 
       <nav class="toolbar-nav" aria-label="Pages">
@@ -357,7 +357,7 @@ function handleTabKeydown(event, index) {
   width: 22px;
   height: 22px;
   border-radius: 6px;
-  background: var(--green);
+  background: var(--brand-gradient);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -365,17 +365,26 @@ function handleTabKeydown(event, index) {
 }
 
 .brand-icon {
-  width: 78%;
-  height: 78%;
+  /* Visible glyph ≈ 52% of the tile, matching the 4a reference (16px padded asset in a 22px tile) */
+  width: 11.5px;
+  height: 11.5px;
   color: #fff;
 }
 
+/* Wordmark: Manrope, "Bonsai" bold + "Budget" medium grey, no space */
 .brand-name {
+  font-family: 'Manrope', var(--font);
   font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.2px;
-  color: var(--text-primary);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.3px;
+  color: var(--wordmark-primary);
   white-space: nowrap;
+}
+
+.brand-name-light {
+  font-weight: 500;
+  color: var(--wordmark-secondary);
 }
 
 .toolbar-nav {
