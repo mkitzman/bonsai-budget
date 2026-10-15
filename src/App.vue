@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, provide } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount, provide } from 'vue'
 import OverviewTab from './components/OverviewTab.vue'
 import BillsTab from './components/BillsTab.vue'
 import SubscriptionsTab from './components/SubscriptionsTab.vue'
@@ -23,8 +23,36 @@ function handleClickOutside(e) {
     closeUserMenu()
   }
 }
-onMounted(() => document.addEventListener('click', handleClickOutside))
-onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
+function handleEscape(e) {
+  if (e.key === 'Escape' && userMenuOpen.value) closeUserMenu()
+}
+
+// Segmented-control selection indicator — measured so it can slide between tabs
+const tabButtonsRef = ref(null)
+const tabEls = []
+const indicator = ref({ x: 0, w: 0, ready: false })
+function updateIndicator() {
+  const el = tabEls[tabs.indexOf(activeTab.value)]
+  if (!el) return
+  indicator.value = { x: el.offsetLeft, w: el.offsetWidth, ready: indicator.value.ready }
+  // Enable the spring only after the first placement so it doesn't slide in from 0
+  if (!indicator.value.ready) requestAnimationFrame(() => { indicator.value.ready = true })
+}
+watch(activeTab, () => nextTick(updateIndicator))
+let resizeObserver
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+  document.addEventListener('keydown', handleEscape)
+  nextTick(updateIndicator)
+  document.fonts?.ready.then(updateIndicator)
+  resizeObserver = new ResizeObserver(updateIndicator)
+  if (tabButtonsRef.value) resizeObserver.observe(tabButtonsRef.value)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside)
+  document.removeEventListener('keydown', handleEscape)
+  resizeObserver?.disconnect()
+})
 
 // Theme
 function getInitialTheme() {
@@ -108,6 +136,7 @@ function handleTabKeydown(event, index) {
           <button class="avatar-btn" @click="toggleUserMenu" :aria-expanded="userMenuOpen" aria-haspopup="true" aria-label="Account menu">
             <img v-if="store.syncStatus.user.value.photoURL" :src="store.syncStatus.user.value.photoURL" class="avatar" referrerpolicy="no-referrer" alt="" />
           </button>
+          <Transition name="popover">
           <div v-if="userMenuOpen" class="user-dropdown" role="menu">
             <div class="user-dropdown-header">
               <img v-if="store.syncStatus.user.value.photoURL" :src="store.syncStatus.user.value.photoURL" class="avatar avatar-lg" referrerpolicy="no-referrer" alt="" />
@@ -153,18 +182,26 @@ function handleTabKeydown(event, index) {
               </button>
             </div>
             <div class="user-dropdown-divider" />
-            <button class="user-dropdown-item" role="menuitem" @click="handleSignOut">Sign out</button>
+            <button class="user-dropdown-item sign-out" role="menuitem" @click="handleSignOut">Sign out</button>
           </div>
+          </Transition>
         </div>
         <a v-else class="sign-in-link text-sm" @click="signInWithGoogle">Sign in</a>
       </div>
     </header>
 
     <nav class="tab-bar">
-      <div class="tab-buttons" role="tablist">
+      <div class="tab-buttons" role="tablist" ref="tabButtonsRef">
+        <span
+          class="tab-indicator"
+          :class="{ ready: indicator.ready }"
+          :style="{ width: `${indicator.w}px`, transform: `translateX(${indicator.x}px)` }"
+          aria-hidden="true"
+        />
         <button
           v-for="(tab, index) in tabs"
           :key="tab"
+          :ref="el => (tabEls[index] = el)"
           :id="`tab-${tab}`"
           role="tab"
           :aria-selected="activeTab === tab"
@@ -186,7 +223,7 @@ function handleTabKeydown(event, index) {
     </nav>
 
     <main class="tab-content" role="tabpanel" :aria-labelledby="`tab-${activeTab}`">
-      <transition name="fade" mode="out-in">
+      <transition name="tab-fade">
         <component :is="tabComponent" :key="activeTab" />
       </transition>
     </main>
@@ -197,6 +234,7 @@ function handleTabKeydown(event, index) {
 .app-title {
   font-family: 'Manrope', system-ui;
   font-weight: 800;
+  letter-spacing: -0.025em;
 }
 
 .app-title-row {
@@ -248,7 +286,12 @@ function handleTabKeydown(event, index) {
   cursor: pointer;
   border-radius: 50%;
   line-height: 0;
-  transition: box-shadow 0.2s;
+  transition: box-shadow 0.2s, transform var(--spring-duration) var(--spring);
+}
+
+.avatar-btn:active {
+  transform: scale(0.92);
+  transition-duration: var(--press-duration);
 }
 
 .avatar-btn:hover,
@@ -273,20 +316,35 @@ function handleTabKeydown(event, index) {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  min-width: 240px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  padding: 8px 0;
+  min-width: 250px;
+  background: var(--material-thick);
+  -webkit-backdrop-filter: var(--material-blur);
+  backdrop-filter: var(--material-blur);
+  border-radius: 14px;
+  box-shadow: 0 0 0 0.5px var(--material-edge) inset, 0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 12px 40px rgba(0, 0, 0, 0.18);
+  padding: 6px;
   z-index: 100;
+  /* Grows out of the avatar that opened it */
+  transform-origin: top right;
+}
+
+.popover-enter-active {
+  transition: opacity 0.2s ease, transform var(--spring-duration) var(--spring);
+}
+.popover-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease-in;
+}
+.popover-enter-from,
+.popover-leave-to {
+  opacity: 0;
+  transform: scale(0.9);
 }
 
 .user-dropdown-header {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 8px 16px 12px;
+  padding: 8px 10px 10px;
 }
 
 .user-dropdown-identity {
@@ -308,9 +366,9 @@ function handleTabKeydown(event, index) {
 }
 
 .user-dropdown-divider {
-  height: 1px;
+  height: 0.5px;
   background: var(--border);
-  margin: 4px 0;
+  margin: 5px 10px;
 }
 
 .user-dropdown-item {
@@ -319,15 +377,20 @@ function handleTabKeydown(event, index) {
   text-align: left;
   background: none;
   border: none;
-  padding: 10px 16px;
+  padding: 8px 10px;
+  border-radius: 8px;
   font: inherit;
   color: var(--text-primary);
   cursor: pointer;
 }
 
-.user-dropdown-item:hover {
-  background: var(--surface-secondary);
+.user-dropdown-item.sign-out {
   color: var(--red);
+}
+
+.user-dropdown-item.sign-out:hover {
+  background: var(--red);
+  color: #fff;
 }
 
 .theme-row {
@@ -339,16 +402,14 @@ function handleTabKeydown(event, index) {
 }
 
 .user-dropdown-section {
-  padding: 8px 16px;
+  padding: 6px 10px;
 }
 
 .user-dropdown-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--text-tertiary);
-  margin-bottom: 8px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
 }
 
 .palette-options {
@@ -372,12 +433,19 @@ function handleTabKeydown(event, index) {
 }
 
 .palette-option:hover {
-  background: var(--surface-secondary);
+  background: var(--fill);
 }
 
 .palette-option.active {
-  border-color: var(--accent);
-  background: var(--surface-secondary);
+  background: var(--fill);
+  font-weight: 600;
+}
+
+.palette-option.active::after {
+  content: '✓';
+  margin-left: auto;
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .palette-swatches {
@@ -388,8 +456,8 @@ function handleTabKeydown(event, index) {
 .palette-swatch {
   width: 14px;
   height: 14px;
-  border-radius: 3px;
-  border: 1px solid var(--border);
+  border-radius: 50%;
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.15) inset;
 }
 
 .theme-row:hover {
@@ -438,13 +506,13 @@ function handleTabKeydown(event, index) {
   position: absolute;
   top: 3px;
   left: 3px;
-  transition: all 0.4s ease;
+  transition: transform var(--spring-duration) var(--spring), background-color 0.4s ease, box-shadow 0.4s ease;
   box-shadow: 0 0 6px rgba(253, 203, 110, 0.6);
   z-index: 2;
 }
 
 .dark .toggle-thumb {
-  left: 31px;
+  transform: translateX(28px);
   background: #dfe6e9;
   box-shadow: 0 0 6px rgba(223, 230, 233, 0.4);
 }
@@ -513,15 +581,45 @@ function handleTabKeydown(event, index) {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  position: relative;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 28px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  margin: 0 -20px 28px;
+  padding: 10px 20px;
+  background: var(--material);
+  -webkit-backdrop-filter: var(--material-blur);
+  backdrop-filter: var(--material-blur);
 }
 
+/* Scroll edge: a hairline appears only once content scrolls under the bar */
+@supports (animation-timeline: scroll()) {
+  .tab-bar {
+    animation: tab-bar-edge linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 120px;
+  }
+  @keyframes tab-bar-edge {
+    from, 60% { box-shadow: 0 0.5px 0 transparent; }
+    to { box-shadow: 0 0.5px 0 var(--border); }
+  }
+}
+
+@media (max-width: 600px) {
+  .tab-bar {
+    margin: 0 -12px 20px;
+    padding: 8px 12px;
+  }
+}
+
+/* Segmented control */
 .tab-buttons {
   display: flex;
-  flex: 1;
+  position: relative;
   min-width: 0;
+  padding: 2px;
+  gap: 2px;
+  background: var(--fill);
+  border-radius: 9px;
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -531,79 +629,102 @@ function handleTabKeydown(event, index) {
   display: none;
 }
 
+.tab-indicator {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 0;
+  border-radius: 7px;
+  background: var(--surface);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 3px 1px rgba(0, 0, 0, 0.04);
+  pointer-events: none;
+}
+
+/* Slides from wherever it currently is — CSS transitions retarget mid-flight */
+.tab-indicator.ready {
+  transition: transform var(--spring-duration) var(--spring), width var(--spring-duration) var(--spring);
+}
+
+[data-theme="dark"] .tab-indicator {
+  background: #636366;
+}
+
 .tab-btn {
+  position: relative;
+  z-index: 1;
   flex-shrink: 0;
-}
-
-.month-select {
-  flex-shrink: 0;
-}
-
-.month-select {
+  padding: 6px 16px;
+  border: none;
+  border-radius: 7px;
+  background: none;
   font-family: var(--font);
   font-size: 14px;
   font-weight: 500;
-  padding: 4px 28px 4px 12px;
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
+  letter-spacing: -0.01em;
+  color: var(--text-secondary);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: color 0.2s ease, opacity 0.15s ease;
+}
+
+@media (hover: hover) {
+  .tab-btn:not(.active):hover {
+    color: var(--text-primary);
+  }
+}
+
+.tab-btn:not(.active):active {
+  opacity: 0.55;
+  transition-duration: var(--press-duration);
+}
+
+.tab-btn.active {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.tab-btn:focus-visible {
+  outline-offset: -2px;
+}
+
+.month-select {
+  flex-shrink: 0;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 6px 28px 6px 12px;
+  border: none;
+  border-radius: 9px;
+  background-color: var(--fill);
   color: var(--green);
   cursor: pointer;
   appearance: none;
   width: auto;
   max-width: 150px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' fill='none' stroke='%238e8e93' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5l3 3 3-3' fill='none' stroke='%238e8e93' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 8px center;
-  transition: border-color 0.2s;
+  background-position: right 9px center;
+  transition: background-color 0.15s ease;
 }
 
 .month-select:hover {
-  border-color: var(--green);
+  background-color: var(--fill-strong);
 }
 
 .month-select:focus {
   outline: none;
-  border-color: var(--green);
-  box-shadow: 0 0 0 3px rgba(42, 104, 74, 0.15);
+  box-shadow: 0 0 0 4px var(--focus-ring);
 }
 
-.tab-btn {
-  padding: 10px 20px;
-  border: none;
-  background: none;
-  font-family: var(--font);
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  cursor: pointer;
-  position: relative;
-  transition: color 0.2s ease;
+/* New tab fades in immediately — no waiting for the old one to leave */
+.tab-fade-enter-active {
+  transition: opacity 0.2s ease;
 }
-
-.tab-btn:hover {
-  color: var(--text-primary);
+.tab-fade-enter-from {
+  opacity: 0;
 }
-
-.tab-btn.active {
-  color: var(--green);
-}
-
-.tab-btn.active::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  right: 0;
-  height: 2.5px;
-  background: var(--green);
-  border-radius: 2px 2px 0 0;
-  animation: slideIn 0.25s ease;
-}
-
-@keyframes slideIn {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
+.tab-fade-leave-active {
+  display: none;
 }
 
 .tab-content {

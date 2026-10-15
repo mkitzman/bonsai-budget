@@ -326,7 +326,9 @@ const subsBreakdown = computed(() => {
     <CalendarView />
 
     <!-- Budget Settings Modal -->
-    <BudgetSettings v-if="showSettings" @close="showSettings = false" />
+    <Transition name="modal" :duration="{ enter: 500, leave: 200 }">
+      <BudgetSettings v-if="showSettings" @close="showSettings = false" />
+    </Transition>
   </div>
 </template>
 
@@ -496,6 +498,10 @@ const subsBreakdown = computed(() => {
   background: var(--surface-secondary);
 }
 
+.budget-card-header:active {
+  background: var(--fill);
+}
+
 .budget-card-left {
   display: flex;
   align-items: center;
@@ -543,7 +549,7 @@ const subsBreakdown = computed(() => {
 .chevron {
   font-size: 14px;
   color: var(--text-tertiary);
-  transition: transform 0.25s ease;
+  transition: transform var(--spring-duration) var(--spring);
 }
 
 .chevron.open {
@@ -553,7 +559,7 @@ const subsBreakdown = computed(() => {
 /* Progress bar */
 .progress-track {
   height: 6px;
-  background: var(--bg);
+  background: var(--fill);
   margin: 0 20px;
   border-radius: 3px;
   overflow: hidden;
@@ -563,20 +569,7 @@ const subsBreakdown = computed(() => {
 .progress-fill {
   height: 100%;
   border-radius: 3px;
-  transition: width 0.4s ease, background 0.3s ease;
-}
-
-.progress-track.warning .progress-fill {
-  animation: pulse 2s ease-in-out infinite;
-}
-
-.progress-track.critical .progress-fill {
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+  transition: width var(--spring-duration) var(--spring), background-color 0.3s ease;
 }
 
 .progress-overflow {
@@ -597,12 +590,12 @@ const subsBreakdown = computed(() => {
 .cat-items {
   border-top: 1px solid var(--border-light);
   padding: 4px 20px 12px;
-  animation: revealItems 0.25s ease;
+  animation: revealItems 0.35s var(--ease-out);
 }
 
 @keyframes revealItems {
-  from { opacity: 0; max-height: 0; }
-  to { opacity: 1; max-height: 500px; }
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: none; }
 }
 
 .cat-item {

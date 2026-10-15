@@ -156,16 +156,18 @@ function toggleMonth(key) {
     </div>
 
     <!-- Confirm delete dialog -->
-    <div v-if="confirmDeleteId" class="confirm-overlay" @click.self="confirmDeleteId = null" @keydown.escape="confirmDeleteId = null">
-      <div class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-expense-title" ref="dialogRef" tabindex="-1">
-        <h3 id="delete-expense-title">Delete Expense?</h3>
-        <p>This action cannot be undone.</p>
-        <div class="actions">
-          <button class="btn btn-secondary" @click="confirmDeleteId = null">Cancel</button>
-          <button class="btn btn-danger" @click="doDelete">Delete</button>
+    <Transition name="modal" :duration="{ enter: 500, leave: 200 }">
+      <div v-if="confirmDeleteId" class="confirm-overlay" @click.self="confirmDeleteId = null" @keydown.escape="confirmDeleteId = null">
+        <div class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-expense-title" ref="dialogRef" tabindex="-1">
+          <h3 id="delete-expense-title">Delete Expense?</h3>
+          <p>This action cannot be undone.</p>
+          <div class="actions">
+            <button class="btn btn-secondary" @click="confirmDeleteId = null">Cancel</button>
+            <button class="btn btn-danger" @click="doDelete">Delete</button>
+          </div>
         </div>
       </div>
-    </div>
+    </Transition>
   </div>
 </template>
 
@@ -233,6 +235,10 @@ function toggleMonth(key) {
   background: var(--surface-secondary);
 }
 
+.history-header:active {
+  background: var(--fill);
+}
+
 .history-label {
   font-weight: 600;
   font-size: 15px;
@@ -249,7 +255,7 @@ function toggleMonth(key) {
 .chevron {
   font-size: 14px;
   color: var(--text-tertiary);
-  transition: transform 0.25s ease;
+  transition: transform var(--spring-duration) var(--spring);
 }
 
 .chevron.open {

@@ -29,8 +29,26 @@
   --radius-md: 12px;
   --radius-lg: 16px;
 
-  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
+  --font: system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text',
     'Helvetica Neue', Helvetica, Arial, sans-serif;
+
+  /* Motion — critically damped spring (damping 1.0, response 0.35s).
+     linear() samples the spring curve so CSS transitions settle like UIKit springs. */
+  --spring: linear(0, 0.075, 0.227, 0.39, 0.536, 0.656, 0.75, 0.821, 0.873, 0.911,
+    0.938, 0.957, 0.971, 0.98, 0.986, 0.991, 0.994, 0.996, 0.997, 0.998, 1);
+  --spring-duration: 0.5s;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --press-duration: 80ms;
+
+  /* Materials — translucent chrome over scrolling content */
+  --material: rgba(242, 242, 247, 0.72);
+  --material-thick: rgba(255, 255, 255, 0.82);
+  --material-blur: saturate(180%) blur(20px);
+  --material-edge: rgba(255, 255, 255, 0.5);
+  --scrim: rgba(0, 0, 0, 0.25);
+  --fill: rgba(118, 118, 128, 0.12);
+  --fill-strong: rgba(118, 118, 128, 0.2);
+  --focus-ring: color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 [data-theme="dark"] {
@@ -47,6 +65,13 @@
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+
+  --material: rgba(28, 28, 30, 0.72);
+  --material-thick: rgba(44, 44, 46, 0.82);
+  --material-edge: rgba(255, 255, 255, 0.08);
+  --scrim: rgba(0, 0, 0, 0.5);
+  --fill: rgba(118, 118, 128, 0.24);
+  --fill-strong: rgba(118, 118, 128, 0.36);
 }
 
 /* ==========================================================================
@@ -71,6 +96,8 @@
   --surface-secondary: #fff9f2;
   --border: #ecddc9;
   --border-light: #f5ebe0;
+
+  --material: rgba(255, 244, 233, 0.72);
 }
 
 [data-palette="bonsai"][data-theme="dark"] {
@@ -84,6 +111,9 @@
   --surface-secondary: #2d2e35;
   --border: #3a3b42;
   --border-light: #2f3036;
+
+  --material: rgba(24, 25, 26, 0.72);
+  --material-thick: rgba(35, 36, 42, 0.82);
 }
 
 *,
@@ -99,6 +129,8 @@ body {
   background: var(--bg);
   color: var(--text-primary);
   line-height: 1.5;
+  font-optical-sizing: auto;
+  -webkit-tap-highlight-color: transparent;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -110,9 +142,10 @@ body {
 }
 
 /* Typography */
-h1 { font-size: 34px; font-weight: 700; letter-spacing: -0.5px; }
-h2 { font-family: 'Manrope', system-ui; font-size: 22px; font-weight: 800; letter-spacing: -0.3px; color: var(--green); }
-h3 { font-size: 17px; font-weight: 600; }
+/* Tracking tightens as size grows; leading loosens as size shrinks */
+h1 { font-size: 34px; font-weight: 700; line-height: 1.1; letter-spacing: -0.022em; }
+h2 { font-family: 'Manrope', system-ui; font-size: 22px; font-weight: 800; line-height: 1.2; letter-spacing: -0.015em; color: var(--green); }
+h3 { font-size: 17px; font-weight: 600; line-height: 1.3; letter-spacing: -0.01em; }
 .text-secondary { color: var(--text-secondary); }
 .text-sm { font-size: 13px; }
 
@@ -122,11 +155,6 @@ h3 { font-size: 17px; font-weight: 600; }
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
   padding: 20px;
-  transition: box-shadow 0.2s ease;
-}
-
-.card:hover {
-  box-shadow: var(--shadow-md);
 }
 
 /* Buttons */
@@ -141,26 +169,29 @@ h3 { font-size: 17px; font-weight: 600; }
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  /* Release springs back; press is near-instant (see :active) */
+  transition: transform var(--spring-duration) var(--spring), filter 0.15s ease, background-color 0.15s ease;
   background: var(--accent);
   color: #fff;
+  touch-action: manipulation;
 }
 
-.btn:hover {
-  filter: brightness(1.1);
+@media (hover: hover) {
+  .btn:hover { filter: brightness(1.08); }
+  .btn-secondary:hover { background: var(--fill-strong); }
 }
 
+/* Feedback on pointer-down, not on release */
 .btn:active {
-  transform: scale(0.97);
+  transform: scale(0.96);
+  filter: brightness(0.92);
+  transition-duration: var(--press-duration);
+  transition-timing-function: ease-out;
 }
 
 .btn-secondary {
-  background: var(--bg);
+  background: var(--fill);
   color: var(--text-primary);
-}
-
-.btn-secondary:hover {
-  background: var(--border);
 }
 
 .btn-danger {
@@ -185,12 +216,21 @@ h3 { font-size: 17px; font-weight: 600; }
   border: none;
   cursor: pointer;
   color: var(--text-secondary);
-  transition: all 0.2s ease;
+  touch-action: manipulation;
+  transition: transform var(--spring-duration) var(--spring), background-color 0.15s ease, color 0.15s ease;
 }
 
-.btn-icon:hover {
-  background: var(--bg);
-  color: var(--text-primary);
+@media (hover: hover) {
+  .btn-icon:hover {
+    background: var(--fill);
+    color: var(--text-primary);
+  }
+}
+
+.btn-icon:active {
+  transform: scale(0.88);
+  background: var(--fill-strong);
+  transition-duration: var(--press-duration);
 }
 
 /* Inputs */
@@ -214,7 +254,18 @@ select:focus,
 textarea:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
+  box-shadow: 0 0 0 4px var(--focus-ring);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
 }
 
 input[type="number"] {
@@ -304,7 +355,7 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .cell-edit input:focus,
 .cell-edit select:focus {
-  background: rgba(10, 132, 255, 0.06);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
   box-shadow: none;
 }
 
@@ -402,7 +453,9 @@ input[type="number"]::-webkit-inner-spin-button {
 .summary-card .value {
   font-size: 28px;
   font-weight: 700;
-  letter-spacing: -0.5px;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Empty state */
@@ -422,11 +475,11 @@ input[type="number"]::-webkit-inner-spin-button {
   margin-bottom: 16px;
 }
 
-/* Checkbox toggle */
+/* Checkbox toggle — iOS proportions (51×31) */
 .toggle {
   position: relative;
-  width: 44px;
-  height: 26px;
+  width: 51px;
+  height: 31px;
   display: inline-block;
 }
 
@@ -440,31 +493,35 @@ input[type="number"]::-webkit-inner-spin-button {
   position: absolute;
   cursor: pointer;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: var(--border);
-  border-radius: 13px;
-  transition: background 0.3s;
+  background: var(--fill-strong);
+  border-radius: 16px;
+  transition: background-color 0.25s ease;
 }
 
 .toggle .slider::before {
   content: '';
   position: absolute;
-  width: 22px;
-  height: 22px;
+  width: 27px;
+  height: 27px;
   left: 2px;
-  bottom: 2px;
+  top: 2px;
   background: #fff;
-  border-radius: 50%;
-  transition: transform 0.3s;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  border-radius: 14px;
+  transition: transform var(--spring-duration) var(--spring), width var(--spring-duration) var(--spring);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15), 0 1px 1px rgba(0, 0, 0, 0.16);
 }
 
 .toggle input:checked + .slider {
-  background: var(--accent);
+  background: var(--green);
 }
 
 .toggle input:checked + .slider::before {
-  transform: translateX(18px);
+  transform: translateX(20px);
 }
+
+/* Thumb stretches toward its destination while held */
+.toggle:active .slider::before { width: 33px; }
+.toggle:active input:checked + .slider::before { transform: translateX(14px); }
 
 /* Scrollable table wrapper */
 .table-wrapper {
@@ -476,22 +533,51 @@ input[type="number"]::-webkit-inner-spin-button {
 .confirm-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--scrim);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 100;
-  backdrop-filter: blur(4px);
 }
 
 .confirm-dialog {
-  background: var(--surface);
-  border-radius: var(--radius-lg);
-  padding: 28px;
-  max-width: 340px;
+  background: var(--material-thick);
+  -webkit-backdrop-filter: var(--material-blur);
+  backdrop-filter: var(--material-blur);
+  border-radius: 14px;
+  padding: 24px;
+  max-width: 300px;
   width: 90%;
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 0 0 0.5px var(--material-edge) inset, 0 20px 50px rgba(0, 0, 0, 0.25);
   text-align: center;
+}
+
+/* Modal enter/exit — the surface materializes (scale + blur) rather than plain-fading.
+   Used with <Transition name="modal"> around a .confirm-overlay. */
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.25s ease;
+}
+.modal-enter-active > *,
+.modal-leave-active > * {
+  transition: transform var(--spring-duration) var(--spring), opacity 0.25s ease, filter 0.25s ease;
+}
+.modal-leave-active > * {
+  transition-duration: 0.2s;
+  transition-timing-function: ease-in;
+}
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+.modal-enter-from > *,
+.modal-leave-to > * {
+  opacity: 0;
+  transform: scale(1.08);
+  filter: blur(6px);
+}
+.modal-leave-to > * {
+  transform: scale(0.96);
 }
 
 .confirm-dialog h3 {
@@ -510,12 +596,53 @@ input[type="number"]::-webkit-inner-spin-button {
   justify-content: center;
 }
 
-/* Reduced motion */
+.confirm-dialog .actions .btn {
+  flex: 1;
+  justify-content: center;
+}
+
+/* Reduced motion — keep gentle cross-fades, drop movement, scale and loops */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-timing-function: ease !important;
+    transition-duration: 0.15s !important;
+    scroll-behavior: auto !important;
+  }
+  .btn:active,
+  .btn-icon:active {
+    transform: none;
+  }
+  .modal-enter-from > *,
+  .modal-leave-to > * {
+    transform: none;
+    filter: none;
+  }
+}
+
+/* Reduced transparency — solid chrome, no blur */
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --material: var(--bg);
+    --material-thick: var(--surface);
+    --material-blur: none;
+  }
+}
+
+/* Increased contrast — defined edges */
+@media (prefers-contrast: more) {
+  :root {
+    --material: var(--bg);
+    --material-thick: var(--surface);
+    --material-blur: none;
+    --border-light: var(--border);
+    --text-secondary: var(--text-primary);
+  }
+  .card,
+  .summary-card,
+  .confirm-dialog {
+    box-shadow: 0 0 0 1px var(--text-tertiary);
   }
 }
 
@@ -525,6 +652,3 @@ input[type="number"]::-webkit-inner-spin-button {
   color: var(--text-primary);
 }
 
-[data-theme="dark"] .confirm-overlay {
-  background: rgba(0, 0, 0, 0.6);
-}
