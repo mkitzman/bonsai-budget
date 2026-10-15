@@ -50,6 +50,13 @@
   --fill-strong: rgba(118, 118, 128, 0.2);
   --focus-ring: color-mix(in srgb, var(--accent) 22%, transparent);
 
+  /* Overview summary (6b) */
+  --card-ring: rgba(0, 0, 0, 0.04);
+  --row-divider: rgba(0, 0, 0, 0.06);
+  --bar-track: rgba(118, 118, 128, 0.14);
+  --positive: #1a7f45;
+  --negative: #ff3b30;
+
   /* Brand (4a) — same tile in light and dark */
   --brand-gradient: linear-gradient(180deg, #34c759 0%, #1a7f45 100%);
   --wordmark-primary: #1d1d1f;
@@ -90,6 +97,12 @@
 
   --wordmark-primary: #f5f5f7;
   --wordmark-secondary: #98989d;
+
+  --card-ring: rgba(255, 255, 255, 0.06);
+  --row-divider: rgba(255, 255, 255, 0.08);
+  --bar-track: rgba(118, 118, 128, 0.24);
+  --positive: #30d158;
+  --negative: #ff453a;
 
   --toolbar-bg: rgba(28, 28, 30, 0.82);
   --hairline: rgba(255, 255, 255, 0.08);

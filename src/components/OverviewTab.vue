@@ -47,6 +47,30 @@ const fmt = (n) => {
   return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+// Currency with a true minus sign before the $: −$1,553.48
+const money = (n) => {
+  const num = Number(n) || 0
+  return `${num < 0 ? '\u2212' : ''}$${fmt(Math.abs(num))}`
+}
+
+// Share of income allocated to bills + subscriptions (segments clamped to 100% total)
+const allocation = computed(() => {
+  const income = Number(store.income.value) || 0
+  const bills = store.totalBills.value
+  const subs = store.totalSubscriptions.value
+  if (income <= 0) return { bills: 0, subs: 0, pct: null, over: false }
+  const billsPct = (bills / income) * 100
+  const subsPct = (subs / income) * 100
+  const pct = billsPct + subsPct
+  const clampedBills = Math.min(100, billsPct)
+  return {
+    bills: clampedBills,
+    subs: Math.min(100 - clampedBills, subsPct),
+    pct: Math.round(pct),
+    over: pct > 100
+  }
+})
+
 function getCSSVar(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 }
@@ -122,51 +146,58 @@ const subsBreakdown = computed(() => {
 
 <template>
   <div>
-    <!-- Income -->
-    <div class="income-section mb-24">
-      <span class="text-secondary text-sm">Monthly Income</span>
-      <div class="income-display" @click="startEditIncome" v-if="!editingIncome">
-        <span class="dollar">$</span>
-        <span class="amount">{{ fmt(store.income.value) }}</span>
-        <span class="edit-hint text-secondary text-sm">click to edit</span>
-      </div>
-      <div class="income-edit" v-else>
-        <span class="dollar">$</span>
-        <input
-          ref="incomeInput"
-          type="number"
-          min="0"
-          v-model.number="store.income.value"
-          @blur="finishEditIncome"
-          @keydown.enter="finishEditIncome"
-          class="income-input"
-        />
-      </div>
-    </div>
-
-    <!-- Summary Cards -->
-    <div class="summary-cards mb-24">
-      <div class="summary-card">
-        <div class="label">Total Bills</div>
-        <div class="value" style="color: var(--orange)">${{ fmt(store.totalBills.value) }}</div>
-      </div>
-      <div class="summary-card">
-        <div class="label">Total Subscriptions</div>
-        <div class="value" style="color: var(--accent)">${{ fmt(store.totalSubscriptions.value) }}</div>
-      </div>
-      <div class="summary-card">
-        <div class="label">Remaining</div>
-        <div class="value" :style="{ color: store.remaining.value >= 0 ? 'var(--green)' : 'var(--red)' }">
-          ${{ fmt(store.remaining.value) }}
+    <!-- Summary grid: income + totals -->
+    <div class="stat-grid">
+      <div class="stat-card income-card">
+        <div class="stat-label">Monthly Income</div>
+        <button v-if="!editingIncome" class="stat-value income-value" @click="startEditIncome" aria-label="Edit monthly income">
+          {{ money(store.income.value) }}
+          <svg class="edit-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M11.1 2.3a1.5 1.5 0 0 1 2.1 0l.5.5a1.5 1.5 0 0 1 0 2.1L6 12.6l-3.1.6.6-3.1 7.6-7.8Z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+        </button>
+        <div v-else class="income-edit">
+          <span class="income-edit-dollar">$</span>
+          <input
+            ref="incomeInput"
+            type="number"
+            min="0"
+            v-model.number="store.income.value"
+            @blur="finishEditIncome"
+            @keydown.enter="finishEditIncome"
+            class="income-input"
+            aria-label="Monthly income"
+          />
         </div>
+        <div
+          class="alloc-bar"
+          role="img"
+          :aria-label="allocation.pct === null ? 'No income set' : `${allocation.pct}% of income allocated to bills and subscriptions`"
+        >
+          <span class="alloc-bills" :style="{ width: `${allocation.bills}%` }" />
+          <span class="alloc-subs" :style="{ width: `${allocation.subs}%` }" />
+        </div>
+        <div class="alloc-caption" :class="{ over: allocation.over }">
+          {{ allocation.pct === null ? 'Set your income to see allocation' : `${allocation.pct}% allocated` }}
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Bills</div>
+        <div class="stat-value" style="color: var(--orange)">{{ money(store.totalBills.value) }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Subscriptions</div>
+        <div class="stat-value" style="color: var(--accent)">{{ money(store.totalSubscriptions.value) }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Remaining</div>
+        <div class="stat-value" :class="store.remaining.value >= 0 ? 'positive' : 'negative'">{{ money(store.remaining.value) }}</div>
       </div>
     </div>
 
     <!-- Pay period breakdown -->
-    <div class="mb-24">
+    <section class="period-section" aria-labelledby="period-heading">
       <div class="pay-period-header">
-        <span class="text-sm text-secondary">By pay period</span>
-        <button v-if="!editingPayPeriods" class="link-btn text-sm" @click="startEditPayPeriods">Edit</button>
+        <h3 id="period-heading" class="period-heading">By pay period</h3>
+        <button v-if="!editingPayPeriods" class="link-btn" @click="startEditPayPeriods">Edit</button>
       </div>
       <div v-if="editingPayPeriods" class="pay-period-editor card text-sm">
         <span class="text-secondary">Periods start on day:</span>
@@ -178,27 +209,27 @@ const subsBreakdown = computed(() => {
         <button class="btn btn-sm" @click="savePayPeriods">Save</button>
         <button class="btn btn-secondary btn-sm" @click="editingPayPeriods = false">Cancel</button>
       </div>
-      <div class="summary-cards">
-        <div class="period-stack">
-          <div v-for="p in store.payPeriods.value" :key="'b' + p.start" class="summary-card period-card">
-            <div class="label">{{ p.label }}</div>
-            <div class="period-value" style="color: var(--orange)">${{ fmt(p.bills) }}</div>
+      <div class="period-list">
+        <div v-for="p in store.payPeriods.value" :key="p.start" class="period-row">
+          <div class="period-name-block">
+            <div class="period-name">{{ p.label }}</div>
+            <div class="period-income">{{ money(p.income) }} in</div>
           </div>
-        </div>
-        <div class="period-stack">
-          <div v-for="p in store.payPeriods.value" :key="'s' + p.start" class="summary-card period-card">
-            <div class="label">{{ p.label }}</div>
-            <div class="period-value" style="color: var(--accent)">${{ fmt(p.subscriptions) }}</div>
+          <div class="period-cell">
+            <div class="period-label">Bills</div>
+            <div class="period-value" style="color: var(--orange)">{{ money(p.bills) }}</div>
           </div>
-        </div>
-        <div class="period-stack">
-          <div v-for="p in store.payPeriods.value" :key="'r' + p.start" class="summary-card period-card">
-            <div class="label">{{ p.label }} <span class="text-tertiary">· ${{ fmt(p.income) }} in</span></div>
-            <div class="period-value" :style="{ color: p.remaining >= 0 ? 'var(--green)' : 'var(--red)' }">${{ fmt(p.remaining) }}</div>
+          <div class="period-cell">
+            <div class="period-label">Subscriptions</div>
+            <div class="period-value" style="color: var(--accent)">{{ money(p.subscriptions) }}</div>
+          </div>
+          <div class="period-cell">
+            <div class="period-label">Remaining</div>
+            <div class="period-value" :class="p.remaining >= 0 ? 'positive' : 'negative'">{{ money(p.remaining) }}</div>
           </div>
         </div>
       </div>
-    </div>
+    </section>
 
     <!-- One-time expenses + adjusted remaining -->
     <div v-if="store.totalExpenses.value > 0" class="expense-banner mb-24">
@@ -333,87 +364,147 @@ const subsBreakdown = computed(() => {
 </template>
 
 <style scoped>
-.income-section {
-  text-align: center;
+/* Summary grid (handoff 6b) — income first, then totals; same 4 columns as pay-period rows */
+.stat-grid,
+.period-row {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr 1fr;
+  gap: 16px;
 }
 
-.income-display {
+.stat-card {
   display: flex;
-  align-items: baseline;
-  justify-content: center;
-  position: relative;
-  gap: 2px;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: var(--radius-md);
-  transition: background 0.2s;
-}
-
-.income-display:hover {
+  flex-direction: column;
+  gap: 4px;
+  padding: 18px 20px;
   background: var(--surface);
+  border-radius: 14px;
+  box-shadow: 0 0 0 1px var(--card-ring);
+  min-width: 0;
 }
 
-.income-display .dollar {
-  font-size: 28px;
-  font-weight: 600;
+.stat-label {
+  font-size: 13px;
+  font-weight: 500;
   color: var(--text-secondary);
 }
 
-.income-display .amount {
-  font-family: 'Manrope', system-ui;
-  font-size: 48px;
-  font-weight: 800;
-  letter-spacing: -1px;
-  color: var(--green);
+.stat-value {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.6px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
 }
 
-.edit-hint {
-  position: absolute;
-  margin-left: 8px;
+.positive { color: var(--positive); }
+.negative { color: var(--negative); }
+
+/* Income value is the one editable thing on the card */
+.income-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--font);
+  text-align: left;
+  cursor: text;
+  border-radius: 6px;
+}
+
+.edit-icon {
+  width: 15px;
+  height: 15px;
+  color: var(--text-tertiary);
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: opacity 0.15s ease;
 }
 
-.income-display:hover .edit-hint {
+.income-value:hover .edit-icon,
+.income-value:focus-visible .edit-icon {
   opacity: 1;
 }
 
 .income-edit {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 4px;
+  gap: 2px;
 }
 
-.income-edit .dollar {
-  font-size: 28px;
-  font-weight: 600;
+.income-edit-dollar {
+  font-size: 26px;
+  font-weight: 700;
   color: var(--text-secondary);
 }
 
 .income-input {
-  font-size: 48px;
+  font-family: var(--font);
+  font-size: 26px;
   font-weight: 700;
-  letter-spacing: -1px;
+  letter-spacing: -0.6px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  padding: 0;
   border: none;
   border-bottom: 2px solid var(--accent);
+  border-radius: 0;
   background: transparent;
-  text-align: center;
-  width: 300px;
-  padding: 4px;
-  outline: none;
-  font-family: var(--font);
   color: var(--text-primary);
+  width: 100%;
+  min-width: 0;
 }
 
-.mt-4 { margin-top: 4px; }
+.income-input:focus {
+  box-shadow: none;
+}
 
-/* Pay period breakdown */
+.alloc-bar {
+  display: flex;
+  height: 4px;
+  margin-top: 10px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: var(--bar-track);
+}
+
+.alloc-bills,
+.alloc-subs {
+  height: 100%;
+  transition: width var(--spring-duration) var(--spring);
+}
+
+.alloc-bills { background: var(--orange); }
+.alloc-subs { background: var(--accent); }
+
+.alloc-caption {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.alloc-caption.over {
+  color: var(--negative);
+}
+
+/* By pay period — one grouped card, rows share the summary grid's columns */
+.period-section {
+  margin: 28px 0 24px;
+}
+
 .pay-period-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.period-heading {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .link-btn {
@@ -423,6 +514,8 @@ const subsBreakdown = computed(() => {
   cursor: pointer;
   color: var(--accent);
   font-family: var(--font);
+  font-size: 15px;
+  border-radius: 4px;
 }
 
 .pay-period-editor {
@@ -443,26 +536,107 @@ const subsBreakdown = computed(() => {
   width: 64px;
 }
 
-.period-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.period-list {
+  background: var(--surface);
+  border-radius: 14px;
+  box-shadow: 0 0 0 1px var(--card-ring);
+  overflow: hidden;
 }
 
-.period-card {
-  padding: 12px 16px;
+.period-row {
+  padding: 16px 0;
+  align-items: center;
+  border-bottom: 1px solid var(--row-divider);
+}
+
+/* Inset each cell (not the row) so columns line up exactly with the summary cards above */
+.period-row > * {
+  padding: 0 20px;
+}
+
+.period-row:last-child {
+  border-bottom: none;
+}
+
+.period-name-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.period-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.period-income {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.period-cell {
+  min-width: 0;
+}
+
+.period-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-tertiary);
 }
 
 .period-value {
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.3px;
   font-variant-numeric: tabular-nums;
 }
 
-.text-tertiary {
-  color: var(--text-tertiary);
-  font-weight: 400;
+/* Tablet: 2×2 summary, income full width; period name on its own line above 3 value columns */
+@media (max-width: 1024px) {
+  /* Income full width, then the three totals in the same 3 columns as the period rows below */
+  .stat-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .income-card {
+    grid-column: 1 / -1;
+  }
+  .period-row {
+    grid-template-columns: repeat(3, 1fr);
+    row-gap: 10px;
+  }
+  .period-name-block {
+    grid-column: 1 / -1;
+  }
 }
+
+/* Phone: single column; period values become label/value pairs */
+@media (max-width: 600px) {
+  .stat-grid,
+  .period-row {
+    grid-template-columns: 1fr;
+  }
+  .period-row {
+    row-gap: 6px;
+  }
+  .period-cell {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .period-label {
+    font-size: 13px;
+  }
+  .period-value {
+    font-size: 17px;
+  }
+}
+
+.mt-4 { margin-top: 4px; }
 
 .expense-banner .summary-cards {
   grid-template-columns: repeat(2, 1fr);
