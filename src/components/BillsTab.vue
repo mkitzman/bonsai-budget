@@ -32,7 +32,11 @@ const sorted = computed(() => {
   arr.sort((a, b) => {
     let va = a[sortKey.value]
     let vb = b[sortKey.value]
-    if (sortKey.value === 'amount' || sortKey.value === 'dueDate') {
+    if (sortKey.value === 'dueDate') {
+      // Spread bills have no single day, so they sort after day 31
+      va = va === 'spread' ? 32 : Number(va) || 0
+      vb = vb === 'spread' ? 32 : Number(vb) || 0
+    } else if (sortKey.value === 'amount') {
       va = Number(va) || 0
       vb = Number(vb) || 0
     } else if (typeof va === 'string') {
@@ -49,7 +53,7 @@ const sorted = computed(() => {
 
 function updateField(id, field, event) {
   let val = event.target.value
-  if (field === 'amount' || field === 'dueDate') val = Number(val) || 0
+  if (field === 'amount' || (field === 'dueDate' && val !== 'spread')) val = Number(val) || 0
   store.updateBill(id, field, val)
 }
 
@@ -166,13 +170,16 @@ const fmt = (n) => {
                 </select>
               </td>
               <td class="cell-edit">
-                <input
-                  type="number"
+                <select
                   :value="bill.dueDate"
-                  min="1" max="31"
-                  @input="updateField(bill.id, 'dueDate', $event)"
-                  style="width: 60px"
-                />
+                  aria-label="Due date"
+                  title="Spread splits the bill evenly across pay periods"
+                  @change="updateField(bill.id, 'dueDate', $event)"
+                  style="width: 96px"
+                >
+                  <option value="spread">Spread</option>
+                  <option v-for="d in 31" :key="d" :value="d">{{ d }}</option>
+                </select>
               </td>
               <td class="cell-edit">
                 <textarea

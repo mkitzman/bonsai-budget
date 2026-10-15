@@ -73,7 +73,12 @@ export function useStore() {
       }
     })
 
-    bills.value.forEach(b => { periods[periodIndex(b.dueDate)].bills += getBillCurrentAmount(b) })
+    bills.value.forEach(b => {
+      const amount = getBillCurrentAmount(b)
+      // Spread bills (e.g. groceries) are paid from every paycheck, so split them evenly like income
+      if (b.dueDate === 'spread') periods.forEach(p => { p.bills += amount / periods.length })
+      else periods[periodIndex(b.dueDate)].bills += amount
+    })
     subscriptions.value.forEach(s => { periods[periodIndex(s.renewalDate)].subscriptions += getSubscriptionCurrentAmount(s) })
     periods.forEach(p => { p.remaining = p.income - p.bills - p.subscriptions })
 
