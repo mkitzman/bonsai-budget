@@ -198,15 +198,19 @@ export function useStore() {
 
   // Expenses CRUD
   function addExpense() {
+    // Dated today when adding to the current month, otherwise the 1st of the selected month
+    const now = new Date()
+    const isCurrentMonth = now.getMonth() === selectedMonth.value && now.getFullYear() === selectedYear.value
     expenses.value.push({
       id: uuidv4(),
       name: '',
       amount: 0,
       category: 'Needs',
-      date: '',
+      date: isCurrentMonth ? now.getDate() : 1,
       notes: '',
       month: selectedMonth.value,
-      year: selectedYear.value
+      year: selectedYear.value,
+      createdAt: Date.now()
     })
   }
 

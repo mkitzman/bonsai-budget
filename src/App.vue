@@ -290,7 +290,7 @@ function handleTabKeydown(event, index) {
             @click="toggleMonthMenu"
             @keydown="handleMonthButtonKeydown"
           >
-            {{ store.monthNames[store.selectedMonth.value] }}<span class="month-chevron" aria-hidden="true" />
+            {{ store.monthNames[store.selectedMonth.value] }}<svg class="month-chevron" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" /></svg>
           </button>
           <Transition name="popover">
             <div
@@ -443,9 +443,10 @@ function handleTabKeydown(event, index) {
 }
 
 .month-button {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
+  line-height: 1;
   padding: 0;
   border: none;
   background: none;
@@ -462,12 +463,16 @@ function handleTabKeydown(event, index) {
   color: var(--accent-light);
 }
 
+/* SVG chevron centers on the text naturally — no rotate/translate nudging */
 .month-chevron {
-  width: 6px;
+  width: 10px;
   height: 6px;
-  border-right: 1.5px solid currentColor;
-  border-bottom: 1.5px solid currentColor;
-  transform: translateY(-3px) rotate(45deg);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
 }
 
 .month-list {
@@ -1005,6 +1010,11 @@ function handleTabKeydown(event, index) {
   .toolbar.signed-out .brand {
     display: none;
   }
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 24px 0 20px;
+  }
 }
 
 /* Small phones (iPhone mini/SE): the Overview tab already goes home, so the logo can step aside */
@@ -1014,11 +1024,6 @@ function handleTabKeydown(event, index) {
   }
   .brand {
     display: none;
-  }
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 24px 0 20px;
   }
 }
 
