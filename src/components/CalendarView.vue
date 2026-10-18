@@ -68,6 +68,16 @@ const calendarDays = computed(() => {
   return days
 })
 
+// Up to 3 names per day; the rest collapse into "+N more"
+const MAX_ITEMS = 3
+function dayItems(cell) {
+  const items = [
+    ...(cell.bills || []).map(b => ({ key: 'b' + b.id, name: b.name || 'Untitled bill', type: 'bill' })),
+    ...(cell.subs || []).map(s => ({ key: 's' + s.id, name: s.name || 'Untitled subscription', type: 'sub' }))
+  ]
+  return { shown: items.slice(0, MAX_ITEMS), more: Math.max(0, items.length - MAX_ITEMS) }
+}
+
 const hoveredDay = ref(null)
 
 const fmt = (n) => {
@@ -116,6 +126,14 @@ function subAmountForView(sub) {
         @mouseleave="hoveredDay = null"
       >
         <span v-if="cell.day" class="day-num">{{ cell.day }}</span>
+        <!-- Names on wider screens, dots on phones where cells are too narrow -->
+        <ul v-if="cell.day && dayItems(cell).shown.length" class="cal-items">
+          <li v-for="item in dayItems(cell).shown" :key="item.key" class="cal-item">
+            <span class="dot" :class="item.type === 'bill' ? 'dot-bill' : 'dot-sub'" aria-hidden="true" />
+            <span class="cal-item-name">{{ item.name }}</span>
+          </li>
+          <li v-if="dayItems(cell).more" class="cal-more">+{{ dayItems(cell).more }} more</li>
+        </ul>
         <div v-if="cell.day" class="dots">
           <span v-for="b in (cell.bills || []).slice(0, 3)" :key="'b'+b.id" class="dot dot-bill" :title="b.name" />
           <span v-for="s in (cell.subs || []).slice(0, 3)" :key="'s'+s.id" class="dot dot-sub" :title="s.name" />
@@ -166,16 +184,86 @@ function subAmountForView(sub) {
 }
 
 .cal-cell {
-  aspect-ratio: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   justify-content: flex-start;
-  padding: 4px 2px;
+  gap: 4px;
+  min-width: 0;
+  min-height: 104px;
+  padding: 6px 6px 8px;
   border-radius: var(--radius-sm);
   transition: background 0.15s;
-  min-height: 48px;
   cursor: default;
+}
+
+/* Day number sits top-right, like the month view in Calendar; same box as the "today" circle so numbers line up */
+.cal-cell .day-num {
+  align-self: flex-end;
+  min-width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0;
+}
+
+.cal-items {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cal-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--text-body);
+}
+
+.cal-item .dot {
+  width: 6px;
+  height: 6px;
+}
+
+.cal-item-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cal-more {
+  padding-left: 11px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+}
+
+/* Dots are the phone fallback */
+.cal-cell .dots {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .cal-cell {
+    min-height: 48px;
+    align-items: center;
+    padding: 4px 2px;
+  }
+  .cal-cell .day-num {
+    align-self: center;
+  }
+  .cal-items {
+    display: none;
+  }
+  .cal-cell .dots {
+    display: flex;
+  }
 }
 
 .cal-cell:not(.empty):hover {
