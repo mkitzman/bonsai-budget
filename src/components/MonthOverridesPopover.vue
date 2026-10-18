@@ -25,6 +25,7 @@ const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'Ju
 
 const panelRef = ref(null)
 const monthEls = []
+// Set once the helpers below exist: the page's month if it's charged, else the first charged month
 const activeMonth = ref(props.selectedMonth)
 const isSheet = ref(window.matchMedia('(max-width: 820px)').matches)
 const pos = ref({ top: 0, left: 0, placement: 'below', ready: isSheet.value })
@@ -49,6 +50,11 @@ function monthState(m) {
 }
 
 const months = computed(() => MONTH_ABBR.map((abbr, m) => ({ m, abbr, ...monthState(m) })))
+
+if (!monthState(props.selectedMonth).charged) {
+  const firstCharged = months.value.find(month => month.charged)
+  if (firstCharged) activeMonth.value = firstCharged.m
+}
 
 // Start from the stored overrides, or spell out the default schedule on first edit
 function materialize() {
@@ -176,7 +182,7 @@ defineExpose({ close })
           :class="{ charged: month.charged, current: month.m === selectedMonth, active: month.m === activeMonth }"
           :tabindex="month.m === activeMonth ? 0 : -1"
           :aria-pressed="month.charged"
-          :aria-label="`${MONTH_NAMES[month.m]}: ${month.charged ? `charged ${money(month.amount)}` : 'not charged'}`"
+          :aria-label="`${MONTH_NAMES[month.m]}${month.m === selectedMonth ? ' (viewing)' : ''}: ${month.charged ? `charged ${money(month.amount)}` : 'not charged'}`"
           @click="toggle(month.m)"
         >
           <span class="mp-abbr">{{ month.abbr }}</span>

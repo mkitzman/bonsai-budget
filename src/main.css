@@ -920,13 +920,25 @@ textarea.inline-input:focus {
   font-weight: 600;
 }
 
-.mp-month.current:not(.charged) {
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 50%, transparent);
-  color: var(--accent);
+/* The month selected on the page gets a small corner dot (like "today" in Calendar)
+   rather than an outline, which read as a selection on uncharged months */
+.mp-month {
+  position: relative;
 }
 
-.mp-month.current.charged {
-  box-shadow: inset 0 0 0 1.5px #fff, inset 0 0 0 3px var(--accent);
+.mp-month.current::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.mp-month.current.charged::after {
+  background: #fff;
 }
 
 .mp-amount-row {
