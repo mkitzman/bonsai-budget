@@ -4,16 +4,20 @@ const MARGIN = 8
 
 /**
  * Position a fixed panel next to its anchor: below by default, flipped above when it
- * would overflow the viewport. `align: 'end'` lines up right edges, 'start' left edges.
+ * would overflow the viewport. `align: 'end'` lines up right edges, 'start' left edges,
+ * 'center' centers on the anchor. `bounds` (a DOMRect) clamps horizontally to a region.
+ * Returns `arrowX`, the anchor's center relative to the panel's left edge.
  */
-export function placePanel(anchorEl, panelEl, { gap = 8, align = 'start' } = {}) {
+export function placePanel(anchorEl, panelEl, { gap = 8, align = 'start', bounds = null } = {}) {
   const a = anchorEl.getBoundingClientRect()
   const p = panelEl.getBoundingClientRect()
   const vw = window.innerWidth
   const vh = window.innerHeight
 
-  let left = align === 'end' ? a.right - p.width : a.left
-  left = Math.max(MARGIN, Math.min(left, vw - p.width - MARGIN))
+  let left = align === 'end' ? a.right - p.width : align === 'center' ? a.left + a.width / 2 - p.width / 2 : a.left
+  const minLeft = Math.max(MARGIN, bounds ? bounds.left : MARGIN)
+  const maxLeft = Math.min(vw - MARGIN, bounds ? bounds.right : vw - MARGIN) - p.width
+  left = Math.max(minLeft, Math.min(left, maxLeft))
 
   let top = a.bottom + gap
   let placement = 'below'
@@ -21,7 +25,7 @@ export function placePanel(anchorEl, panelEl, { gap = 8, align = 'start' } = {})
     top = a.top - gap - p.height
     placement = 'above'
   }
-  return { top, left, placement, ready: true }
+  return { top, left, placement, ready: true, arrowX: a.left + a.width / 2 - left }
 }
 
 /**

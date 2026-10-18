@@ -321,6 +321,8 @@ export function useStore() {
     getSubscriptionCurrentAmount,
     getCategoryTotalsForMonth,
     getBillCurrentAmount,
+    getBillAmountForMonth,
+    getSubscriptionAmountForMonth,
     selectedMonth,
     selectedYear,
     monthNames,

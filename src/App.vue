@@ -132,6 +132,8 @@ function applyPalette(p) {
 }
 applyPalette(palette.value)
 provide('palette', palette)
+// Lets pages link to each other (e.g. the calendar's "Open in Bills")
+provide('navigate', (tab) => { activeTab.value = tab; window.scrollTo({ top: 0 }) })
 function setPalette(p) {
   palette.value = p
   localStorage.setItem('bt-palette', p)

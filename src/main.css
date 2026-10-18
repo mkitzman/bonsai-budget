@@ -5,11 +5,22 @@
   --red: #ff453a;
   --orange: #ff9f0a;
   --yellow: #ffd60a;
-  --teal: #64d2ff;
+  --teal: #30b0c7;
 
-  --cat-needs: #0a84ff;
+  /* Categories (12a): Needs owns blue */
+  --cat-needs: #007aff;
   --cat-wants: #bf5af2;
-  --cat-savings: #2e912d;
+  --cat-savings: #2e8b3a;
+
+  /* Item types (12a): Bills orange, Subscriptions teal — fill, text-on-white, tint, outline */
+  --type-bill: var(--orange);
+  --type-bill-text: #9a5a00;
+  --type-bill-tint: rgba(255, 159, 10, 0.16);
+  --type-bill-outline: rgba(255, 159, 10, 0.6);
+  --type-sub: var(--teal);
+  --type-sub-text: #0b7d8c;
+  --type-sub-tint: rgba(48, 176, 199, 0.16);
+  --type-sub-outline: rgba(48, 176, 199, 0.7);
 
   --bg: #f2f2f7;
   --surface: #ffffff;
@@ -87,6 +98,15 @@
 }
 
 [data-theme="dark"] {
+  --teal: #40c8e0;
+  --cat-needs: #0a84ff;
+  --cat-savings: #30d158;
+  --type-bill-text: #ffb340;
+  --type-bill-tint: rgba(255, 159, 10, 0.2);
+  --type-sub-text: #5ad3e8;
+  --type-sub-tint: rgba(64, 200, 224, 0.2);
+  --type-sub-outline: rgba(64, 200, 224, 0.7);
+
   --bg: #1c1c1e;
   --surface: #2c2c2e;
   --surface-secondary: #3a3a3c;

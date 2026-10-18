@@ -185,7 +185,7 @@ const subsBreakdown = computed(() => {
       </div>
       <div class="stat-card">
         <div class="stat-label">Total Subscriptions</div>
-        <div class="stat-value" style="color: var(--accent)">{{ money(store.totalSubscriptions.value) }}</div>
+        <div class="stat-value" style="color: var(--type-sub)">{{ money(store.totalSubscriptions.value) }}</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Remaining</div>
@@ -221,7 +221,7 @@ const subsBreakdown = computed(() => {
           </div>
           <div class="period-cell">
             <div class="period-label">Subscriptions</div>
-            <div class="period-value" style="color: var(--accent)">{{ money(p.subscriptions) }}</div>
+            <div class="period-value" style="color: var(--type-sub)">{{ money(p.subscriptions) }}</div>
           </div>
           <div class="period-cell">
             <div class="period-label">Remaining</div>
@@ -315,7 +315,7 @@ const subsBreakdown = computed(() => {
             </div>
             <div v-for="(item, i) in store.categoryBreakdown.value[cat].items" :key="i" class="cat-item">
               <div class="cat-item-left">
-                <span class="item-type-dot" :style="{ background: item.type === 'bill' ? 'var(--orange)' : 'var(--accent)' }" />
+                <span class="item-type-dot" :style="{ background: item.type === 'bill' ? 'var(--type-bill)' : item.type === 'subscription' ? 'var(--type-sub)' : 'var(--red)' }" />
                 <span>{{ item.name }}</span>
                 <span class="chip">{{ item.type === 'bill' ? 'Bill' : 'Sub' }}</span>
               </div>
@@ -478,7 +478,7 @@ const subsBreakdown = computed(() => {
 }
 
 .alloc-bills { background: var(--orange); }
-.alloc-subs { background: var(--accent); }
+.alloc-subs { background: var(--type-sub); }
 
 .alloc-caption {
   font-size: 11px;
