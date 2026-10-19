@@ -217,10 +217,9 @@ function openPage(tab) {
     <div class="cal-titlebar">
       <div class="cal-title-group">
         <h2 id="calendar-title" class="cal-title">Calendar</h2>
-        <div class="cal-meta">
-          <span class="cal-due">{{ money(monthTotal) }} due in {{ MONTH_NAMES[viewMonth] }}</span>
-          <span v-if="isCurrentMonth" class="cal-remaining">{{ money(remainingDue) }} left to pay this month</span>
-        </div>
+        <span class="cal-due">
+          {{ money(monthTotal) }} total<template v-if="isCurrentMonth"><span class="cal-sep" aria-hidden="true">/</span><span class="visually-hidden">, </span>{{ money(remainingDue) }} remaining</template>
+        </span>
       </div>
       <div class="cal-stepper" role="group" aria-label="Month">
         <button type="button" class="stepper-arrow" aria-label="Previous month" @click="step(-1)">
@@ -359,16 +358,9 @@ function openPage(tab) {
   font-variant-numeric: tabular-nums;
 }
 
-.cal-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.cal-remaining {
-  font-size: 13px;
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
+.cal-sep {
+  margin: 0 8px;
+  color: var(--text-tertiary);
 }
 
 .cal-stepper {
