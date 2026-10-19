@@ -181,11 +181,11 @@ const subsBreakdown = computed(() => {
       </div>
       <div class="stat-card">
         <div class="stat-label">Total Bills</div>
-        <div class="stat-value" style="color: var(--orange)">{{ money(store.totalBills.value) }}</div>
+        <div class="stat-value" style="color: var(--type-bill-text)">{{ money(store.totalBills.value) }}</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Total Subscriptions</div>
-        <div class="stat-value" style="color: var(--type-sub)">{{ money(store.totalSubscriptions.value) }}</div>
+        <div class="stat-value" style="color: var(--type-sub-text)">{{ money(store.totalSubscriptions.value) }}</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Remaining</div>
@@ -217,11 +217,11 @@ const subsBreakdown = computed(() => {
           </div>
           <div class="period-cell">
             <div class="period-label">Bills</div>
-            <div class="period-value" style="color: var(--orange)">{{ money(p.bills) }}</div>
+            <div class="period-value" style="color: var(--type-bill-text)">{{ money(p.bills) }}</div>
           </div>
           <div class="period-cell">
             <div class="period-label">Subscriptions</div>
-            <div class="period-value" style="color: var(--type-sub)">{{ money(p.subscriptions) }}</div>
+            <div class="period-value" style="color: var(--type-sub-text)">{{ money(p.subscriptions) }}</div>
           </div>
           <div class="period-cell">
             <div class="period-label">Remaining</div>
@@ -236,12 +236,12 @@ const subsBreakdown = computed(() => {
       <div class="summary-cards">
         <div class="summary-card">
           <div class="label">One-Time Expenses</div>
-          <div class="value" style="color: var(--red)">${{ fmt(store.totalExpenses.value) }}</div>
+          <div class="value" style="color: var(--negative)">${{ fmt(store.totalExpenses.value) }}</div>
           <div class="text-sm text-secondary mt-4">{{ store.monthExpenses.value.length }} expense{{ store.monthExpenses.value.length === 1 ? '' : 's' }} this month</div>
         </div>
         <div class="summary-card">
           <div class="label">Adjusted Remaining</div>
-          <div class="value" :style="{ color: store.adjustedRemaining.value >= 0 ? 'var(--green)' : 'var(--red)' }">
+          <div class="value" :style="{ color: store.adjustedRemaining.value >= 0 ? 'var(--green-text)' : 'var(--negative)' }">
             ${{ fmt(store.adjustedRemaining.value) }}
           </div>
           <div class="text-sm text-secondary mt-4">After all expenses</div>
@@ -269,7 +269,7 @@ const subsBreakdown = computed(() => {
         >
           <button class="budget-card-header" @click="toggleCategory(cat)">
             <div class="budget-card-left">
-              <span class="cat-badge" :style="{ background: categoryColors[cat] }">
+              <span class="cat-badge" :style="{ background: `var(--cat-${cat.toLowerCase()}-badge)` }">
                 {{ Math.round(store.categoryTargets.value[cat] * 100) }}%
               </span>
               <div>
@@ -282,7 +282,7 @@ const subsBreakdown = computed(() => {
             <div class="budget-card-right">
               <div
                 class="cat-remaining"
-                :style="{ color: store.categoryBreakdown.value[cat].remaining >= 0 ? 'var(--green)' : 'var(--red)' }"
+                :style="{ color: store.categoryBreakdown.value[cat].remaining >= 0 ? 'var(--green-text)' : 'var(--negative)' }"
               >
                 {{ store.categoryBreakdown.value[cat].remaining >= 0 ? '' : '-' }}${{ fmt(Math.abs(store.categoryBreakdown.value[cat].remaining)) }}
                 <span class="text-sm text-secondary">{{ store.categoryBreakdown.value[cat].remaining >= 0 ? 'left' : 'over' }}</span>
@@ -514,7 +514,7 @@ const subsBreakdown = computed(() => {
   background: none;
   padding: 0;
   cursor: pointer;
-  color: var(--accent);
+  color: var(--accent-text);
   font-family: var(--font);
   font-size: 15px;
   border-radius: 4px;
@@ -804,8 +804,8 @@ const subsBreakdown = computed(() => {
   font-variant-numeric: tabular-nums;
 }
 
-.text-warning { color: #F59E0B; }
-.text-critical { color: #EF4444; }
+.text-warning { color: var(--warning-text); }
+.text-critical { color: var(--negative); }
 
 .budget-info-hint {
   border: none;
@@ -821,7 +821,7 @@ const subsBreakdown = computed(() => {
 }
 
 .budget-info-hint:hover {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .budget-hint-text {

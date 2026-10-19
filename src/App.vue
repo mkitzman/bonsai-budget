@@ -455,7 +455,7 @@ function handleTabKeydown(event, index) {
   font-family: var(--font);
   font-size: 17px;
   font-weight: 500;
-  color: var(--accent);
+  color: var(--accent-text);
   cursor: pointer;
   border-radius: 4px;
   transition: color 0.15s ease;
@@ -674,7 +674,7 @@ function handleTabKeydown(event, index) {
 }
 
 .user-dropdown-item.sign-out {
-  color: var(--red);
+  color: var(--negative);
 }
 
 .user-dropdown-item.sign-out:hover {
@@ -733,7 +733,7 @@ function handleTabKeydown(event, index) {
 .palette-option.active::after {
   content: '✓';
   margin-left: auto;
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 600;
 }
 
@@ -792,7 +792,7 @@ function handleTabKeydown(event, index) {
   background: none;
   font-family: var(--font);
   font-size: 14px;
-  color: var(--accent);
+  color: var(--accent-text);
   cursor: pointer;
   font-weight: 500;
   border-radius: 4px;

@@ -207,7 +207,7 @@ const hiddenCount = computed(() => rankedItems.value.length - VISIBLE_COUNT)
   font-family: var(--font);
   font-size: 12px;
   font-weight: 500;
-  color: var(--accent);
+  color: var(--accent-text);
   cursor: pointer;
   text-align: center;
   transition: opacity 0.2s;

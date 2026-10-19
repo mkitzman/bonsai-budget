@@ -72,7 +72,7 @@
   font-size: 18px;
   margin-top: 28px;
   margin-bottom: 8px;
-  color: var(--green);
+  color: var(--green-text);
 }
 
 .about p {
@@ -98,7 +98,7 @@
 .tagline {
   margin-top: 24px;
   font-style: italic;
-  color: var(--green) !important;
+  color: var(--green-text) !important;
   font-weight: 600;
 }
 

@@ -700,7 +700,7 @@ function openPage(tab) {
 }
 
 .dp-row:hover .dp-name {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .dp-row:focus-visible {
@@ -778,7 +778,7 @@ function openPage(tab) {
   font-family: var(--font);
   font-size: 13px;
   font-weight: 500;
-  color: var(--accent);
+  color: var(--accent-text);
   cursor: pointer;
   border-radius: 4px;
 }

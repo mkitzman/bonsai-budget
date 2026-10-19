@@ -431,7 +431,7 @@ function doDelete() {
   font-family: var(--font);
   font-size: 15px;
   font-weight: 500;
-  color: var(--accent);
+  color: var(--accent-text);
   cursor: pointer;
   border-radius: 4px;
 }
