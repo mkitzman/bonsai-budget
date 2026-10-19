@@ -326,6 +326,11 @@ const subsBreakdown = computed(() => {
       </div>
     </div>
 
+    <!-- Calendar -->
+    <div class="mb-24">
+      <CalendarView />
+    </div>
+
     <!-- Pie Charts -->
     <div class="chart-row mb-24">
       <PieChart
@@ -352,9 +357,6 @@ const subsBreakdown = computed(() => {
     <div class="mb-24">
       <MonthlyBreakdownChart />
     </div>
-
-    <!-- Calendar -->
-    <CalendarView />
 
     <!-- Budget Settings Modal -->
     <Transition name="modal" :duration="{ enter: 500, leave: 200 }">

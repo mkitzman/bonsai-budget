@@ -76,6 +76,17 @@ const monthTotal = computed(() => {
   return total
 })
 
+const isCurrentMonth = computed(() => viewMonth.value === today.getMonth() && viewYear.value === today.getFullYear())
+
+// Still to come this month: anything due today or later
+const remainingDue = computed(() => {
+  let total = 0
+  itemsByDay.value.forEach((list, day) => {
+    if (day >= today.getDate()) list.forEach(i => { total += i.amount })
+  })
+  return total
+})
+
 const cells = computed(() => {
   const out = []
   for (let i = 0; i < leadingPad.value; i++) out.push({ key: `lead-${i}`, pad: true })
@@ -206,7 +217,10 @@ function openPage(tab) {
     <div class="cal-titlebar">
       <div class="cal-title-group">
         <h2 id="calendar-title" class="cal-title">Calendar</h2>
-        <span class="cal-due">{{ money(monthTotal) }} due in {{ MONTH_NAMES[viewMonth] }}</span>
+        <div class="cal-meta">
+          <span class="cal-due">{{ money(monthTotal) }} due in {{ MONTH_NAMES[viewMonth] }}</span>
+          <span v-if="isCurrentMonth" class="cal-remaining">{{ money(remainingDue) }} left to pay this month</span>
+        </div>
       </div>
       <div class="cal-stepper" role="group" aria-label="Month">
         <button type="button" class="stepper-arrow" aria-label="Previous month" @click="step(-1)">
@@ -341,6 +355,18 @@ function openPage(tab) {
 
 .cal-due {
   font-size: 15px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.cal-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cal-remaining {
+  font-size: 13px;
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
 }
