@@ -334,19 +334,19 @@ const subsBreakdown = computed(() => {
     <!-- Pie Charts -->
     <div class="chart-row mb-24">
       <PieChart
-        title="Income Breakdown"
+        title="Income"
         :labels="incomeBreakdown.labels"
         :data="incomeBreakdown.data"
         :colors="incomeBreakdown.colors"
       />
       <PieChart
-        title="Bills Breakdown"
+        title="Bills"
         :labels="billsBreakdown.labels"
         :data="billsBreakdown.data"
         :colors="billsBreakdown.colors"
       />
       <PieChart
-        title="Subscriptions Breakdown"
+        title="Subscriptions"
         :labels="subsBreakdown.labels"
         :data="subsBreakdown.data"
         :colors="subsBreakdown.colors"
