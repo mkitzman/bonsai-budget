@@ -101,7 +101,7 @@ const hiddenCount = computed(() => rankedItems.value.length - VISIBLE_COUNT)
     <h3 class="mb-8">{{ title }}</h3>
     <template v-if="hasData">
       <div class="chart-area">
-        <Doughnut :data="chartData" :options="chartOptions" />
+        <Doughnut :data="chartData" :options="chartOptions" :aria-label="`${title} breakdown chart, $${fmt(total)} total. Amounts are listed below.`" />
         <div class="chart-center">
           <span class="center-amount">${{ fmt(total) }}</span>
         </div>

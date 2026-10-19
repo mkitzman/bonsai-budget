@@ -196,7 +196,7 @@ const subsBreakdown = computed(() => {
     <!-- Pay period breakdown -->
     <section class="period-section" aria-labelledby="period-heading">
       <div class="pay-period-header">
-        <h3 id="period-heading" class="period-heading">By pay period</h3>
+        <h2 id="period-heading" class="period-heading">By pay period</h2>
         <button v-if="!editingPayPeriods" class="link-btn" @click="startEditPayPeriods">Edit</button>
       </div>
       <div v-if="editingPayPeriods" class="pay-period-editor card text-sm">
@@ -504,8 +504,11 @@ const subsBreakdown = computed(() => {
 }
 
 .period-heading {
+  font-family: var(--font);
   font-size: 15px;
   font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
   color: var(--text-primary);
 }
 

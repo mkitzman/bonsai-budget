@@ -257,7 +257,9 @@ body {
 /* Tracking tightens as size grows; leading loosens as size shrinks */
 h1 { font-size: 34px; font-weight: 700; line-height: 1.1; letter-spacing: -0.022em; }
 h2 { font-family: 'Manrope', system-ui; font-size: 22px; font-weight: 800; line-height: 1.2; letter-spacing: -0.015em; color: var(--green-text); }
-h3 { font-size: 17px; font-weight: 600; line-height: 1.3; letter-spacing: -0.01em; }
+h3, .h3 { font-size: 17px; font-weight: 600; line-height: 1.3; letter-spacing: -0.01em; }
+/* For an h2 that should look like an h3 (keeps heading levels sequential) */
+h2.h3 { font-family: var(--font); color: var(--text-primary); }
 .text-secondary { color: var(--text-secondary); }
 .text-sm { font-size: 13px; }
 
@@ -1401,7 +1403,7 @@ input.mp-amount-input:focus {
   transform: scale(0.96);
 }
 
-.confirm-dialog h3 {
+.confirm-dialog h2 {
   margin-bottom: 8px;
 }
 

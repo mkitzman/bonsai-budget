@@ -266,7 +266,7 @@ const totalCost = computed(() => store.subscriptions.value.reduce((sum, s) => su
     <Transition name="modal" :duration="{ enter: 500, leave: 200 }">
       <div v-if="confirmDeleteId" class="confirm-overlay" @click.self="confirmDeleteId = null" @keydown.escape="confirmDeleteId = null">
         <div class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-sub-title" ref="dialogRef" tabindex="-1">
-          <h3 id="delete-sub-title">Delete Subscription?</h3>
+          <h2 id="delete-sub-title" class="h3">Delete Subscription?</h2>
           <p>This action cannot be undone.</p>
           <div class="actions">
             <button class="btn btn-secondary" @click="confirmDeleteId = null">Cancel</button>

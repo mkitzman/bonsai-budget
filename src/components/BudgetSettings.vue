@@ -86,7 +86,7 @@ const categoryColors = {
 <template>
   <div class="confirm-overlay" @click.self="$emit('close')" @keydown.escape="$emit('close')">
     <div class="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="budget-settings-title" ref="dialogRef" tabindex="-1">
-      <h3 id="budget-settings-title">Budget Strategy</h3>
+      <h2 id="budget-settings-title" class="h3">Budget Strategy</h2>
 
       <div class="presets">
         <button
@@ -165,7 +165,7 @@ const categoryColors = {
   box-shadow: 0 0 0 0.5px var(--material-edge) inset, 0 20px 50px rgba(0, 0, 0, 0.25);
 }
 
-.settings-dialog h3 {
+.settings-dialog h2 {
   margin-bottom: 16px;
   text-align: center;
 }

@@ -127,6 +127,12 @@ const chartOptions = computed(() => ({
   }
 }))
 
+// Text alternative for the canvas: each category's yearly total
+const ariaSummary = computed(() => {
+  const parts = chartData.value.datasets.map(ds => `${ds.label} $${Math.round(ds.data.reduce((a, v) => a + (Number(v) || 0), 0)).toLocaleString()}`)
+  return `Monthly spending by category, January to December. Year totals: ${parts.join(', ')}.`
+})
+
 const hasData = computed(() =>
   chartData.value.datasets.some(ds => ds.data.some(v => v > 0))
 )
@@ -136,7 +142,7 @@ const hasData = computed(() =>
   <div class="card stacked-chart">
     <h3 class="mb-8">Monthly Spending by Category</h3>
     <div v-if="hasData" class="chart-container">
-      <Bar :data="chartData" :options="chartOptions" />
+      <Bar :data="chartData" :options="chartOptions" :aria-label="ariaSummary" />
     </div>
     <div v-else class="empty-chart">
       <p class="text-secondary text-sm">No data yet</p>

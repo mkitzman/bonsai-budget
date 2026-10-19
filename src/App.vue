@@ -279,6 +279,7 @@ function handleTabKeydown(event, index) {
     </header>
 
     <div class="app-body">
+    <main>
     <div class="page-header">
       <div class="page-title-group">
         <h1 class="page-title">{{ activeTab }}</h1>
@@ -322,10 +323,11 @@ function handleTabKeydown(event, index) {
       <div id="page-actions" class="page-actions" />
     </div>
 
-    <main class="tab-content" :role="tabs.includes(activeTab) ? 'tabpanel' : undefined" :aria-labelledby="tabs.includes(activeTab) ? `tab-${activeTab}` : undefined">
+    <div class="tab-content" :role="tabs.includes(activeTab) ? 'tabpanel' : undefined" :aria-labelledby="tabs.includes(activeTab) ? `tab-${activeTab}` : undefined">
       <transition name="tab-fade">
         <component :is="tabComponent" :key="activeTab" />
       </transition>
+    </div>
     </main>
 
     <!-- Signed-out visitors have no account menu, so About is reachable from the footer -->

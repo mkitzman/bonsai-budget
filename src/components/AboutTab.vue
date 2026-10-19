@@ -6,7 +6,7 @@
       manual awareness.
     </p>
 
-    <h3>The Bonsai Philosophy</h3>
+    <h2>The Bonsai Philosophy</h2>
     <p>
       Budgeting is often treated as a restrictive chore, but we view it as an art form. Like a bonsai
       tree, a healthy financial life is not about starvation; it is about intentional pruning.
@@ -18,7 +18,7 @@
       traditional banking software.
     </p>
 
-    <h3>A Secure Foundation</h3>
+    <h2>A Secure Foundation</h2>
     <p>
       Just as a tree requires deep, stable roots, your data requires a robust and private foundation.
     </p>
@@ -45,7 +45,7 @@
       </li>
     </ul>
 
-    <h3>Intentional Growth</h3>
+    <h2>Intentional Growth</h2>
     <p>
       Whether you are following the 50/30/20 rule or calibrating a custom strategy for a
       high-cost-of-living area, the goal remains the same: to be the pilot of your own economy.
@@ -66,7 +66,7 @@
   color: var(--text-primary);
 }
 
-.about h3 {
+.about h2 {
   font-family: 'Manrope', system-ui;
   font-weight: 800;
   font-size: 18px;
